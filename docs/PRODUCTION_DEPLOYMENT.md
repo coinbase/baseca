@@ -195,7 +195,7 @@ _Use this option by using the published image from `baseca` without any code cha
 Create `Dockerfile` and Copy [`Configurations`](../config) to `/home/baseca/config` within the Docker Container.
 
 ```Dockerfile
-FROM ghcr.io/coinbase/baseca:v0.0.1-alpha
+FROM ghcr.io/coinbase/baseca:v0.0.1-beta
 
 COPY ./config /home/baseca/config
 CMD ["/home/baseca/baseca"]
