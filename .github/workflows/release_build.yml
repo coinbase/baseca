@@ -2,10 +2,10 @@ name: Release Build
 
 on:
   push:
-    branches: [ "master"]
+    branches: [ 'master' ]
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: ["development"]
+    branches: [ 'development' ]
 
 env:
   REGISTRY: ghcr.io
