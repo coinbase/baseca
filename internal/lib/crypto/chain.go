@@ -87,7 +87,7 @@ func getCertificateChain(service string) ([]byte, []byte, error) {
 
 	var x509_intermediate_ca *x509.Certificate
 	if _, err := os.Stat(intermediatePath); !os.IsNotExist(err) {
-		intermediate_ca, err := os.ReadFile(intermediatePath)
+		intermediate_ca, err := os.ReadFile(filepath.Clean(intermediatePath))
 		if err != nil {
 			return nil, nil, err
 		}
@@ -97,7 +97,7 @@ func getCertificateChain(service string) ([]byte, []byte, error) {
 		}
 	}
 
-	root_ca, err := os.ReadFile(rootPath)
+	root_ca, err := os.ReadFile(filepath.Clean(rootPath))
 	if err != nil {
 		return nil, nil, err
 	}
