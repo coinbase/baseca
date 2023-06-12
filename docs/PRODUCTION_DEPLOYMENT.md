@@ -195,7 +195,7 @@ _Use this option by using the published image from `baseca` without any code cha
 Create `Dockerfile` and Copy [`Configurations`](../config) to `/home/baseca/config` within the Docker Container.
 
 ```Dockerfile
-FROM ghcr.io/coinbase/baseca:master
+FROM ghcr.io/coinbase/baseca:v0.0.1-alpha
 
 COPY ./config /home/baseca/config
 CMD ["/home/baseca/baseca"]
@@ -209,9 +209,9 @@ docker build -t baseca .
 Push Image to ECR Registry
 
 ```sh
-docker tag baseca <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:master
+docker tag baseca <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:latest
 aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <aws-account-id>.dkr.ecr.<region>.amazonaws.com
-docker push <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:master
+docker push <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:latest
 ```
 
 **NOTE:** This is an image built from [`examples/Dockerfile`](../examples/Dockerfile); there are alternative methods to get the config files onto the image, but you must copy your configurations within the `/home/baseca/config` path.
@@ -226,9 +226,9 @@ _Use this option if you have requirements to change the `baseca` image through e
 cd /path/to/baseca
 docker build -t baseca .
 
-docker tag baseca <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:master
+docker tag baseca <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:latest
 aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <aws-account-id>.dkr.ecr.<region>.amazonaws.com
-docker push <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:master
+docker push <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:latest
 ```
 
 ## Build Compute Infrastructure
