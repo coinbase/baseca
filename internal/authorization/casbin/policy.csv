@@ -1,0 +1,3 @@
+p, ADMIN, /baseca.v1.Account/*
+p, ADMIN, /baseca.v1.Service/*
+p, ADMIN, /baseca.v1.Certificate/*
