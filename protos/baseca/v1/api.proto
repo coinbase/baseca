@@ -1,0 +1,252 @@
+syntax = "proto3";
+
+package baseca.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/coinbase/baseca/protos/baseca/v1;apiv1";
+
+message CertificateParameter {
+  string serial_number = 1;
+  string common_name = 2;
+  repeated string subject_alternative_name = 3;
+  google.protobuf.Timestamp expiration_date = 4;
+  google.protobuf.Timestamp issued_date = 5;
+  bool revoked = 6;
+  string revoked_by = 7;
+  google.protobuf.Timestamp revoke_date = 8;
+  string certificate_authority_arn = 9;
+  string account = 10;
+  string environment = 11;
+  string extended_key = 12;
+}
+
+message CertificatesParameter {
+  repeated CertificateParameter certificates = 1;
+}
+
+message CertificateAuthorityParameter {
+  string region = 1;
+  string ca_arn = 2;
+  string sign_algorithm = 3;
+  bool assume_role = 4;
+  string role_arn = 5;
+  int32 validity = 6;
+}
+
+message CertificateSigningRequest {
+  string certificate_signing_request = 1;
+}
+
+message SignedCertificate {
+  string certificate = 1;
+  string certificate_chain = 2;
+  CertificateParameter metadata = 3;
+}
+
+message CertificateSerialNumber {
+  string serial_number = 1;
+}
+
+message ListCertificatesRequest {
+  string common_name = 1;
+  int32 page_id = 3;
+  int32 page_size = 4;
+}
+
+message RevokeCertificateRequest {
+  string serial_number = 1;
+  string revocation_reason = 2;
+}
+
+message RevokeCertificateResponse {
+  string serial_number = 1;
+  google.protobuf.Timestamp revocation_date = 2;
+  string status = 3;
+}
+
+message OperationsSignRequest {
+  string certificate_signing_request = 1;
+  CertificateAuthorityParameter certificate_authority = 2;
+  string service_account = 3;
+  string environment = 4;
+  string extended_key = 5;}
+
+service Certificate {
+  rpc SignCSR (CertificateSigningRequest) returns (SignedCertificate);
+  rpc GetCertificate (CertificateSerialNumber) returns (CertificateParameter);
+  rpc ListCertificates (ListCertificatesRequest) returns (CertificatesParameter);
+  rpc RevokeCertificate (RevokeCertificateRequest) returns (RevokeCertificateResponse);
+  rpc OperationsSignCSR (OperationsSignRequest) returns (SignedCertificate);
+}
+
+message User {
+  string uuid = 1;
+  string username = 2;
+  string full_name = 3;
+  string email = 4;
+  string permissions = 5;
+  google.protobuf.Timestamp credential_changed_at = 6;
+  google.protobuf.Timestamp created_at = 7;
+}
+
+message Users {
+  repeated User users = 1;
+}
+
+message LoginUserRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginUserResponse {
+  string access_token = 1;
+  User user = 2;
+}
+
+message UsernameRequest {
+  string username = 1;
+}
+
+message QueryParameter {
+  int32 page_id = 2;
+  int32 page_size = 3;
+}
+
+message CreateUserRequest {
+  string username = 1;
+  string password = 2;
+  string full_name = 3;
+  string email = 4;
+  string permissions = 5;
+}
+
+message UpdateCredentialsRequest {
+  string username = 1;
+  string password = 2;
+  string updated_password = 3;
+}
+
+message UpdatePermissionsRequest {
+  string username = 1;
+  string permissions = 2;
+}
+
+service Account {
+  rpc LoginUser (LoginUserRequest) returns (LoginUserResponse);
+  rpc DeleteUser (UsernameRequest) returns (google.protobuf.Empty);
+  rpc GetUser (UsernameRequest) returns (User);
+  rpc ListUsers (QueryParameter) returns (Users);
+  rpc CreateUser (CreateUserRequest) returns (User);
+  rpc UpdateUserCredentials (UpdateCredentialsRequest) returns (User);
+  rpc UpdateUserPermissions (UpdatePermissionsRequest) returns (User);
+}
+
+message CreateServiceAccountRequest {
+  string service_account = 1;
+  string environment = 2;
+  optional string regular_expression = 3;
+  repeated string subject_alternative_names = 4;
+  repeated string certificate_authorities = 5;
+  string extended_key = 6;
+  int32 certificate_validity = 7;
+  string subordinate_ca = 8;
+  optional NodeAttestation node_attestation = 9;
+  string team = 10;
+  string email = 11;
+}
+
+message CreateServiceAccountResponse {
+  string client_id = 1;
+  string client_token = 2;
+  string service_account = 3;
+  string environment = 4;
+  string regular_expression = 5;
+  repeated string subject_alternative_names = 6;
+  repeated string certificate_authorities = 7;
+  string extended_key = 8;
+  NodeAttestation node_attestation = 9;
+  int32 certificate_validity = 10;
+  string subordinate_ca = 11;
+  string team = 12;
+  string email = 13;
+  google.protobuf.Timestamp created_at = 14;
+  string created_by = 15;
+}
+
+message ServiceAccount {
+  string client_id = 1;
+  string service_account = 2;
+  string environment = 3;
+  string regular_expression = 4;
+  repeated string subject_alternative_names = 5;
+  repeated string certificate_authorities = 6;
+  string extended_key = 7;
+  NodeAttestation node_attestation = 8;
+  int32 certificate_validity = 9;
+  string team = 10;
+  string email = 11;
+  google.protobuf.Timestamp created_at = 12;
+  string created_by = 13;
+}
+
+message ServiceAccounts {
+  repeated ServiceAccount service_accounts = 1;
+}
+
+message NodeAttestation {
+  AWSInstanceIdentityDocument aws_iid = 1;
+}
+
+message AWSInstanceIdentityDocument {
+  string role_arn = 1;
+  string assume_role = 2;
+  repeated string security_groups = 3;
+  string region = 4;
+  string instance_id = 5;
+  string image_id = 6;
+  map<string, string> instance_tags = 7;
+}
+
+message ServiceAccountId {
+  string uuid = 1;
+}
+
+message ServiceAccountName{
+  string service_account = 1;
+}
+
+message ProvisionServiceAccountRequest {
+  CreateServiceAccountRequest account = 1;
+}
+
+message ProvisionServiceAccountResponse {
+  CreateServiceAccountResponse account = 1;
+}
+
+service Service {
+  rpc CreateServiceAccount (CreateServiceAccountRequest) returns (CreateServiceAccountResponse);
+  rpc ProvisionServiceAccount (ProvisionServiceAccountRequest) returns (ProvisionServiceAccountResponse);
+  rpc ListServiceAccounts (QueryParameter) returns (ServiceAccounts);
+  rpc GetServiceAccountUuid (ServiceAccountId) returns (ServiceAccount);
+  rpc GetServiceAccountName (ServiceAccountName) returns (ServiceAccounts);
+  rpc DeleteServiceAccount (ServiceAccountId) returns (google.protobuf.Empty);
+}
+
+message HealthCheckRequest {
+  string service = 1;
+}
+
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+  }
+  ServingStatus status = 1;
+}
+
+service Health{
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+} 
