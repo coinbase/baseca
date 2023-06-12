@@ -1,0 +1,13 @@
+.github/
+config/
+docs/
+examples/
+pkg/
+test/
+terraform/
+
+*.md
+
+.dockerignore
+.git
+.gitignore
