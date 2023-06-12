@@ -29,5 +29,10 @@ jobs:
       - name: baseca Unit Test
         run: make test
 
+      - name: gosec Scanner
+        uses: securego/gosec@master
+        with:
+          args: -exclude-dir=examples ./...
+
       - name: Build baseca Container
         run: docker build -f Dockerfile -t baseca .
