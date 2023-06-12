@@ -1,0 +1,61 @@
+grpc_server_address: 0.0.0.0:9090
+
+database:
+  database_driver: postgres
+  database_table: baseca
+  database_endpoint: xxxxxx.cluster.xxxxxx.us-east-1.rds.amazonaws.com
+  database_reader_endpoint: xxxxxx.cluster-ro.xxxxxx.us-east-1.rds.amazonaws.com
+  database_user: baseca
+  database_port: 5432
+  region: us-east-1
+  ssl_mode: verify-full
+
+redis:
+  cluster_endpoint: xxxxxx.xxxxxx.0001.use1.cache.amazonaws.com
+  port: 6379
+  rate_limit: 20
+
+domains:
+  - example.com
+
+acm_pca:
+  development_use1:
+    region: us-east-1
+    ca_arn: arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    ca_active_day: 90
+    assume_role: false
+    root_ca: false
+  development_usw1:
+    region: us-west-1
+    ca_arn: arn:aws:acm-pca:us-west-1:123456789012:certificate-authority/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    ca_active_day: 90
+    assume_role: false
+
+firehose:
+  stream: baseca-development
+  region: us-east-1
+
+kms:
+  key_id: 12345678-1234-1234-1234-123456789012
+  signing_algorithm: RSASSA_PSS_SHA_512
+  region: us-east-1
+  auth_validity: 5
+
+secrets_manager:
+  secret_id: baseca-xxxxxxxxxxxx
+
+subordinate_ca_metadata:
+  country: "US"
+  province: "CA"
+  locality: "San Francisco"
+  organization: "Example"
+  organization_unit: "Security"
+  email: "example@example.com"
+  signing_algorithm: SHA512WITHRSA
+  key_algorithm: "RSA"
+  key_size: 4096
+
+certificate_authority:
+  development:
+    - development_use1
+    - development_usw1
