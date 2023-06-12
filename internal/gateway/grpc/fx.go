@@ -41,7 +41,7 @@ func StartRPC(lc fx.Lifecycle, cfg *config.Config) error {
 
 	credentials, err := client.GetSecretValue(cfg.SecretsManager.SecretId, secretsmanager.DATABASE_CREDENTIALS)
 	if err != nil {
-		log.Fatalf("error getting database credentials", err)
+		log.Fatalf("error getting database credentials: %s", err)
 	}
 
 	caError := certificate.ValidateSubordinateParameters(cfg.SubordinateMetadata)
