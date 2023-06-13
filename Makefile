@@ -34,7 +34,7 @@ build: info clean
 
 .PHONY: postgres
 postgres:
-	@ docker run --name baseca -p 5432:5432  -v ${pwd)/db/init:/db/init -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
+	@ docker run --name baseca -p 5432:5432  -v /path/to/baseca/db/init:/db/init -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
 
 .PHONY: createdb
 createdb:

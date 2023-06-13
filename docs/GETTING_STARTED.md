@@ -172,7 +172,7 @@ Run the `baseca` Container
 
 ```sh
 docker run -p 9090:9090 -e password=secret -v ~/.aws/:/home/baseca/.aws/:ro \
-  -v $(pwd)/config:/home/baseca/config ghcr.io/coinbase/baseca:VERSION_SHA
+  -v /path/to/baseca/config:/home/baseca/config ghcr.io/coinbase/baseca:VERSION_SHA
 ```
 
 ### 3b. Compile `baseca` as Executable (Option B)
