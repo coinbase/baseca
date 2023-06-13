@@ -1,5 +1,4 @@
 SERVICE := baseca
-VERSION := $(shell git describe --tags)
 BUILD := $(shell git rev-parse --short HEAD)
 GITHUB_REPO := github.com/coinbase/baseca
 
@@ -14,7 +13,6 @@ usage:
 .PHONY: info
 info:
 	@ echo SERVICE: $(SERVICE)
-	@ echo VERSION: $(VERSION)
 	@ echo BUILD: $(BUILD)
 
 .PHONY: clean

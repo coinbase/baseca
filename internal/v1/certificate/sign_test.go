@@ -3,7 +3,6 @@ package certificate
 import (
 	"context"
 	"crypto/x509"
-	"fmt"
 	"testing"
 
 	"github.com/coinbase/baseca/db/mock"
@@ -73,7 +72,6 @@ func TestSignCSR(t *testing.T) {
 
 			req := tc.req()
 			res, err := c.SignCSR(ctx, req)
-			fmt.Println(err)
 			tc.check(t, res, err)
 		})
 	}

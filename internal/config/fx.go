@@ -1,6 +1,8 @@
 package config
 
 import (
+	"log"
+
 	"github.com/coinbase/baseca/internal/environment"
 	"github.com/coinbase/baseca/internal/logger"
 	"go.uber.org/fx"
@@ -41,7 +43,7 @@ func ProvideConfig(p Parameter) (Result, error) {
 	_, resolver := p.Environment, p.PathResolver
 	path, err := resolver.Resolve()
 	if err != nil {
-		ctxLogger.Error(err.Error())
+		log.Fatalf("configuration file does not exist [%s]", err.Error())
 	}
 	ctxLogger.Info("Load Config From File, Config Path: " + path)
 	v, err := BuildViper(path)

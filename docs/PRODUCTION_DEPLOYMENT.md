@@ -188,22 +188,28 @@ psql -h [rds_writer_endpoint] -U [username] -d baseca -f /path/to/init.sql
 
 ## Build and Upload `baseca` to ECR
 
-### Option A: Build from Published `baseca` Image
+### 1a. Build from Published `baseca` Image
 
 _Use this option by using the published image from `baseca` without any code changes or updates to your Dockerfile._
 
 Create `Dockerfile` and Copy [`Configurations`](../config) to `/home/baseca/config` within the Docker Container.
 
+**RELEASE:** Search for Latest [`baseca ghcr.io Published Release`](https://github.com/orgs/coinbase/packages/container/package/baseca) and update the `VERSION_SHA` container tag with the latest version.
+
 ```Dockerfile
-FROM ghcr.io/coinbase/baseca:v0.0.1-beta
+# baseca/Dockerfile-production
+
+FROM ghcr.io/coinbase/baseca:VERSION_SHA
 
 COPY ./config /home/baseca/config
+USER baseca
+
 CMD ["/home/baseca/baseca"]
 ```
 
 ```sh
-cd /path/to/Dockerfile
-docker build -t baseca .
+cd /path/to/baseca/Dockerfile-production
+docker build -t baseca -f Dockerfile-production .
 ```
 
 Push Image to ECR Registry
@@ -218,14 +224,20 @@ docker push <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:latest
 
 <img src="images/baseca_image.png" width="80%" height="80%" />
 
-### Option B: Local Build
+### 1b. Local Build
 
 _Use this option if you have requirements to change the `baseca` image through either custom code changes or updates to the Dockerfile._
+
+**NOTE:** If you intend to run a local build, within the current [`Dockerfile`](../Dockerfile) we do not copy the `config/` directory into the base image. Additionally within `.dockerignore` we ignore the `config/` directory as well. If you are running the image directly, the OS directory structure for the final image should be the same as the image in the previous option.
 
 ```sh
 cd /path/to/baseca
 docker build -t baseca .
+```
 
+Push Image to ECR Registry
+
+```sh
 docker tag baseca <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:latest
 aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <aws-account-id>.dkr.ecr.<region>.amazonaws.com
 docker push <aws-account-id>.dkr.ecr.<region>.amazonaws.com/baseca:latest

@@ -168,8 +168,11 @@ Run the `baseca` Container
 
 **NOTE:** You must have AWS credentials stored locally within `~/.aws` with permissions to all infrastructure components created from Terraform and access to the Private CAs.
 
+**RELEASE:** Search for Latest [`baseca ghcr.io Published Release`](https://github.com/orgs/coinbase/packages/container/package/baseca) and update the `VERSION_SHA` container tag with the latest version.
+
 ```sh
-docker run -p 9090:9090 -e password=secret -v ~/.aws/:/home/baseca/.aws/:ro -v $(pwd)/config:/home/baseca/config ghcr.io/coinbase/baseca:v0.0.1-beta
+docker run -p 9090:9090 -e password=secret -v ~/.aws/:/home/baseca/.aws/:ro \
+  -v $(pwd)/config:/home/baseca/config ghcr.io/coinbase/baseca:VERSION_SHA
 ```
 
 ### 3b. Compile `baseca` as Executable (Option B)

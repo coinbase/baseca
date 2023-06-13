@@ -1,3 +1,21 @@
+# `baseca` Configuration File
+
+## Environment Variables
+
+Configurations are held the [`baseca/config`](../config/). The structure for the configuration files are `config.primary.CONFIGURATION.ENVIRONMENT.yml`.
+
+- If `ENVIRONMENT` is set to anything the value will be `aws`, if it is not set it will be `sandbox`.
+- If `CONFIGURATION` is set, that same value will reflect within the configuration file.
+
+If `baseca` is run with the following environment variables then during start time it will look for the `config.primary.infrastructure-production.aws.yml` configuration file.
+
+```sh
+export ENVIRONMENT=production
+export CONFIGURATION=infrastructure-production
+```
+
+## Configuration File Parameters
+
 ```yml
 grpc_server_address: 0.0.0.0:9090 # baseca gRPC Server Port
 

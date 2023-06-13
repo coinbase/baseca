@@ -29,7 +29,10 @@ var _ ConfigFilePathResolver = (*Resolver)(nil)
 func (r Resolver) Resolve() (string, error) {
 	configurationFileName := configurationFileName(r.Environment)
 	location := fmt.Sprintf(r.Template, configurationFileName)
-	path, _ := bazel.Runfile(location)
+	path, err := bazel.Runfile(location)
+	if err != nil {
+		return "", fmt.Errorf(location)
+	}
 	return path, nil
 }
 
