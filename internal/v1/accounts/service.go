@@ -66,7 +66,7 @@ func (s *Service) CreateServiceAccount(ctx context.Context, req *apiv1.CreateSer
 
 	payload, ok := ctx.Value(types.AuthorizationPayloadKey).(*authentication.Claims)
 	if !ok {
-		logger.RpcError(status.Error(codes.Internal, "internal server error"), fmt.Errorf("service auth context missing"))
+		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), fmt.Errorf("service auth context missing"))
 	}
 
 	// Production Service Accounts Require Attestation
