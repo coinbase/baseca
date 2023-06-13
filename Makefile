@@ -1,5 +1,4 @@
 SERVICE := baseca
-VERSION := $(shell git describe --tags)
 BUILD := $(shell git rev-parse --short HEAD)
 GITHUB_REPO := github.com/coinbase/baseca
 
@@ -14,7 +13,6 @@ usage:
 .PHONY: info
 info:
 	@ echo SERVICE: $(SERVICE)
-	@ echo VERSION: $(VERSION)
 	@ echo BUILD: $(BUILD)
 
 .PHONY: clean
@@ -36,7 +34,7 @@ build: info clean
 
 .PHONY: postgres
 postgres:
-	@ docker run --name baseca -p 5432:5432  -v ${pwd)/db/init:/db/init -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
+	@ docker run --name baseca -p 5432:5432  -v /path/to/baseca/db/init:/db/init -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
 
 .PHONY: createdb
 createdb:

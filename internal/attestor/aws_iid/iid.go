@@ -195,12 +195,6 @@ func getEC2Instance(instancesDesc *ec2.DescribeInstancesOutput) (ec2types.Instan
 	return instancesDesc.Reservations[0].Instances[0], nil
 }
 
-func isEmptyAWSIID(iid types.AWSInstanceIdentityDocument) bool {
-	return iid.RoleArn == "" && iid.AssumeRole == "" && len(iid.SecurityGroups) == 0 &&
-		iid.Region == "" && iid.InstanceID == "" && iid.ImageID == "" &&
-		len(iid.InstanceTags) == 0
-}
-
 func GetNodeAttestation(node_attestation *apiv1.NodeAttestation) []string {
 	var valid_attestation []string
 	var iid = node_attestation.AwsIid

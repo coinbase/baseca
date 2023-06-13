@@ -31,12 +31,6 @@ var (
 		"KEY_COMPROMISE",
 		"CERTIFICATE_AUTHORITY_COMPROMISE",
 	}
-
-	_validTemplates = []string{
-		"arn:aws:acm-pca:::template/CodeSigningCertificate/V1",
-		"arn:aws:acm-pca:::template/EndEntityClientAuthCertificate/V1",
-		"arn:aws:acm-pca:::template/EndEntityServerAuthCertificate/V1",
-	}
 )
 
 func (c *Certificate) RevokeCertificate(ctx context.Context, req *apiv1.RevokeCertificateRequest) (*apiv1.RevokeCertificateResponse, error) {
