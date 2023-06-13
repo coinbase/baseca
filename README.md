@@ -2,6 +2,8 @@
    coinbase/baseca
 </h3>
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/coinbase/baseca)](https://goreportcard.com/report/github.com/coinbase/baseca) [![PR Build](https://github.com/coinbase/baseca/actions/workflows/pr_build.yml/badge.svg)](https://github.com/coinbase/baseca/actions/workflows/pr_build.yml) [![Release Build](https://github.com/coinbase/baseca/actions/workflows/release_build.yml/badge.svg)](https://github.com/coinbase/baseca/actions/workflows/release_build.yml)
+
 ## Overview
 
 `baseca` is a `gRPC` service that serves as a Public Key Infrastructure (PKI) control plane intended to provide a safe and scalable approach to issue short-lived end-entities certificates.
