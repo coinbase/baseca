@@ -24,8 +24,3 @@ variable "bucket" {
   description = "Bucket Name to Store Certificate Streaming Data from Firehose"
   type = string
 }
-
-variable "acm_pca_arns" {
-  description = "List of Supported ACM Private CA ARNs"
-  type    = list(string)
-}

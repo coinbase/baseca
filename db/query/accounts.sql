@@ -12,11 +12,12 @@ INSERT INTO accounts (
     extended_key,
     certificate_validity,
     subordinate_ca,
+    provisioned,
     node_attestation,
     created_at,
     created_by
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
 ) RETURNING *;
 
 -- name: GetServiceUUID :one
@@ -59,3 +60,11 @@ RETURNING *;
 -- name: DeleteServiceAccount :exec
 DELETE FROM accounts 
 WHERE client_id = $1;
+
+-- name: GetServiceAccountBySAN :many
+SELECT * FROM accounts
+WHERE valid_subject_alternate_name = ANY($1::string[]);
+
+-- name: GetServiceAccountByMetadata :many
+SELECT * FROM accounts
+WHERE service_account LIKE $1 AND environment LIKE $2 AND extended_key LIKE $3;

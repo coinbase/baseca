@@ -37,6 +37,21 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 	return m.recorder
 }
 
+// CreateProvisionerAccount mocks base method.
+func (m *MockStore) CreateProvisionerAccount(arg0 context.Context, arg1 db.CreateProvisionerAccountParams) (*db.Provisioner, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateProvisionerAccount", arg0, arg1)
+	ret0, _ := ret[0].(*db.Provisioner)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateProvisionerAccount indicates an expected call of CreateProvisionerAccount.
+func (mr *MockStoreMockRecorder) CreateProvisionerAccount(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateProvisionerAccount", reflect.TypeOf((*MockStore)(nil).CreateProvisionerAccount), arg0, arg1)
+}
+
 // CreateServiceAccount mocks base method.
 func (m *MockStore) CreateServiceAccount(arg0 context.Context, arg1 db.CreateServiceAccountParams) (*db.Account, error) {
 	m.ctrl.T.Helper()
@@ -79,6 +94,20 @@ func (m *MockStore) DeleteInstanceIdentityDocument(arg0 context.Context, arg1 uu
 func (mr *MockStoreMockRecorder) DeleteInstanceIdentityDocument(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteInstanceIdentityDocument", reflect.TypeOf((*MockStore)(nil).DeleteInstanceIdentityDocument), arg0, arg1)
+}
+
+// DeleteProvisionerAccount mocks base method.
+func (m *MockStore) DeleteProvisionerAccount(arg0 context.Context, arg1 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteProvisionerAccount", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteProvisionerAccount indicates an expected call of DeleteProvisionerAccount.
+func (mr *MockStoreMockRecorder) DeleteProvisionerAccount(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteProvisionerAccount", reflect.TypeOf((*MockStore)(nil).DeleteProvisionerAccount), arg0, arg1)
 }
 
 // DeleteServiceAccount mocks base method.
@@ -139,6 +168,51 @@ func (mr *MockStoreMockRecorder) GetInstanceIdentityDocument(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInstanceIdentityDocument", reflect.TypeOf((*MockStore)(nil).GetInstanceIdentityDocument), arg0, arg1)
 }
 
+// GetProvisionerUUID mocks base method.
+func (m *MockStore) GetProvisionerUUID(arg0 context.Context, arg1 uuid.UUID) (*db.Provisioner, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProvisionerUUID", arg0, arg1)
+	ret0, _ := ret[0].(*db.Provisioner)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProvisionerUUID indicates an expected call of GetProvisionerUUID.
+func (mr *MockStoreMockRecorder) GetProvisionerUUID(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProvisionerUUID", reflect.TypeOf((*MockStore)(nil).GetProvisionerUUID), arg0, arg1)
+}
+
+// GetServiceAccountByMetadata mocks base method.
+func (m *MockStore) GetServiceAccountByMetadata(arg0 context.Context, arg1 db.GetServiceAccountByMetadataParams) ([]*db.Account, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetServiceAccountByMetadata", arg0, arg1)
+	ret0, _ := ret[0].([]*db.Account)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServiceAccountByMetadata indicates an expected call of GetServiceAccountByMetadata.
+func (mr *MockStoreMockRecorder) GetServiceAccountByMetadata(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceAccountByMetadata", reflect.TypeOf((*MockStore)(nil).GetServiceAccountByMetadata), arg0, arg1)
+}
+
+// GetServiceAccountBySAN mocks base method.
+func (m *MockStore) GetServiceAccountBySAN(arg0 context.Context, arg1 []string) ([]*db.Account, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetServiceAccountBySAN", arg0, arg1)
+	ret0, _ := ret[0].([]*db.Account)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServiceAccountBySAN indicates an expected call of GetServiceAccountBySAN.
+func (mr *MockStoreMockRecorder) GetServiceAccountBySAN(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceAccountBySAN", reflect.TypeOf((*MockStore)(nil).GetServiceAccountBySAN), arg0, arg1)
+}
+
 // GetServiceAccounts mocks base method.
 func (m *MockStore) GetServiceAccounts(arg0 context.Context, arg1 string) ([]*db.Account, error) {
 	m.ctrl.T.Helper()
@@ -167,6 +241,21 @@ func (m *MockStore) GetServiceUUID(arg0 context.Context, arg1 uuid.UUID) (*db.Ac
 func (mr *MockStoreMockRecorder) GetServiceUUID(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceUUID", reflect.TypeOf((*MockStore)(nil).GetServiceUUID), arg0, arg1)
+}
+
+// GetSignedCertificateByMetadata mocks base method.
+func (m *MockStore) GetSignedCertificateByMetadata(arg0 context.Context, arg1 db.GetSignedCertificateByMetadataParams) ([]*db.Certificate, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSignedCertificateByMetadata", arg0, arg1)
+	ret0, _ := ret[0].([]*db.Certificate)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSignedCertificateByMetadata indicates an expected call of GetSignedCertificateByMetadata.
+func (mr *MockStoreMockRecorder) GetSignedCertificateByMetadata(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSignedCertificateByMetadata", reflect.TypeOf((*MockStore)(nil).GetSignedCertificateByMetadata), arg0, arg1)
 }
 
 // GetUser mocks base method.
@@ -212,6 +301,21 @@ func (m *MockStore) ListCertificates(arg0 context.Context, arg1 db.ListCertifica
 func (mr *MockStoreMockRecorder) ListCertificates(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListCertificates", reflect.TypeOf((*MockStore)(nil).ListCertificates), arg0, arg1)
+}
+
+// ListProvisionerAccounts mocks base method.
+func (m *MockStore) ListProvisionerAccounts(arg0 context.Context, arg1 db.ListProvisionerAccountsParams) ([]*db.Provisioner, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListProvisionerAccounts", arg0, arg1)
+	ret0, _ := ret[0].([]*db.Provisioner)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListProvisionerAccounts indicates an expected call of ListProvisionerAccounts.
+func (mr *MockStoreMockRecorder) ListProvisionerAccounts(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListProvisionerAccounts", reflect.TypeOf((*MockStore)(nil).ListProvisionerAccounts), arg0, arg1)
 }
 
 // ListServiceAccounts mocks base method.
@@ -288,6 +392,21 @@ func (mr *MockStoreMockRecorder) StoreInstanceIdentityDocument(arg0, arg1 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StoreInstanceIdentityDocument", reflect.TypeOf((*MockStore)(nil).StoreInstanceIdentityDocument), arg0, arg1)
 }
 
+// TxCreateProvisionerAccount mocks base method.
+func (m *MockStore) TxCreateProvisionerAccount(arg0 context.Context, arg1 db.CreateProvisionerAccountParams, arg2 db.StoreInstanceIdentityDocumentParams) (*db.Provisioner, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TxCreateProvisionerAccount", arg0, arg1, arg2)
+	ret0, _ := ret[0].(*db.Provisioner)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// TxCreateProvisionerAccount indicates an expected call of TxCreateProvisionerAccount.
+func (mr *MockStoreMockRecorder) TxCreateProvisionerAccount(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxCreateProvisionerAccount", reflect.TypeOf((*MockStore)(nil).TxCreateProvisionerAccount), arg0, arg1, arg2)
+}
+
 // TxCreateServiceAccount mocks base method.
 func (m *MockStore) TxCreateServiceAccount(arg0 context.Context, arg1 db.CreateServiceAccountParams, arg2 db.StoreInstanceIdentityDocumentParams) (*db.Account, error) {
 	m.ctrl.T.Helper()
@@ -301,6 +420,20 @@ func (m *MockStore) TxCreateServiceAccount(arg0 context.Context, arg1 db.CreateS
 func (mr *MockStoreMockRecorder) TxCreateServiceAccount(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxCreateServiceAccount", reflect.TypeOf((*MockStore)(nil).TxCreateServiceAccount), arg0, arg1, arg2)
+}
+
+// TxDeleteProvisionerAccount mocks base method.
+func (m *MockStore) TxDeleteProvisionerAccount(arg0 context.Context, arg1 uuid.UUID) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "TxDeleteProvisionerAccount", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// TxDeleteProvisionerAccount indicates an expected call of TxDeleteProvisionerAccount.
+func (mr *MockStoreMockRecorder) TxDeleteProvisionerAccount(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxDeleteProvisionerAccount", reflect.TypeOf((*MockStore)(nil).TxDeleteProvisionerAccount), arg0, arg1)
 }
 
 // TxDeleteServiceAccount mocks base method.

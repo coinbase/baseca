@@ -25,7 +25,7 @@ grpcurl -vv -plaintext -H "Authorization: Bearer ${AUTH_TOKEN}" \
         "extended_key": "EndEntityServerAuthCertificate",
         "node_attestation": { # << Node Attestation Scope >>
           "aws_iid": {
-            "role_arn": "arn:aws:iam::123456789012:role/role",
+            "role_arn": "arn:aws:iam::123456789012:instance-profile/instance-profile-name",
             "assume_role": "arn:aws:iam::123456789012:role/assumed-role",
             "security_groups": ["sg-0123456789abcdef0"],
             "region": "us-east-1"

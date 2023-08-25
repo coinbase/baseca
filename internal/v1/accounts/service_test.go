@@ -31,7 +31,7 @@ func TestCreateServiceAccount(t *testing.T) {
 	}
 
 	attestation := apiv1.AWSInstanceIdentityDocument{
-		RoleArn:        "arn:aws:iam::123456789012:role/role",
+		RoleArn:        "arn:aws:iam::123456789012:instance-profile/role",
 		AssumeRole:     "arn:aws:iam::123456789012:role/assumed-role",
 		SecurityGroups: []string{"sg-0123456789abcdef0"},
 		Region:         "us-east-1",
@@ -40,14 +40,15 @@ func TestCreateServiceAccount(t *testing.T) {
 	accountParam := db.CreateServiceAccountParams{
 		ServiceAccount:              "example",
 		Environment:                 "sandbox",
-		ValidSubjectAlternateName:   []string{"development.example.com"},
+		ValidSubjectAlternateName:   []string{"sandbox.example.com"},
 		ExtendedKey:                 "EndEntityServerAuthCertificate",
 		NodeAttestation:             []string{"AWS_IID"},
 		CertificateValidity:         30,
 		ValidCertificateAuthorities: []string{"sandbox_use1"},
 		SubordinateCa:               "infrastructure",
+		Provisioned:                 false,
 		Team:                        "Infrastructure Security",
-		Email:                       "security@example.com",
+		Email:                       "security@coinbase.com",
 		CreatedBy:                   id,
 	}
 
@@ -61,7 +62,7 @@ func TestCreateServiceAccount(t *testing.T) {
 	request := apiv1.CreateServiceAccountRequest{
 		ServiceAccount:          "example",
 		Environment:             "sandbox",
-		SubjectAlternativeNames: []string{"development.example.com"},
+		SubjectAlternativeNames: []string{"sandbox.example.com"},
 		ExtendedKey:             "EndEntityServerAuthCertificate",
 		NodeAttestation: &apiv1.NodeAttestation{
 			AwsIid: &attestation,
@@ -70,7 +71,7 @@ func TestCreateServiceAccount(t *testing.T) {
 		SubordinateCa:          "infrastructure",
 		CertificateValidity:    30,
 		Team:                   "Infrastructure Security",
-		Email:                  "security@example.com",
+		Email:                  "security@coinbase.com",
 	}
 
 	cases := []struct {
@@ -101,25 +102,25 @@ func TestCreateServiceAccount(t *testing.T) {
 			req: &apiv1.CreateServiceAccountRequest{
 				ServiceAccount:          "example",
 				Environment:             "sandbox",
-				SubjectAlternativeNames: []string{"development.example.com"},
+				SubjectAlternativeNames: []string{"sandbox.example.com"},
 				ExtendedKey:             "EndEntityServerAuthCertificate",
 				CertificateAuthorities:  []string{"sandbox_use1"},
 				SubordinateCa:           "infrastructure",
 				CertificateValidity:     30,
 				Team:                    "Infrastructure Security",
-				Email:                   "security@example.com",
+				Email:                   "security@coinbase.com",
 			},
 			build: func(store *mock.MockStore) {
 				account_arg := db.CreateServiceAccountParams{
 					ServiceAccount:              "example",
 					Environment:                 "sandbox",
-					ValidSubjectAlternateName:   []string{"development.example.com"},
+					ValidSubjectAlternateName:   []string{"sandbox.example.com"},
 					ExtendedKey:                 "EndEntityServerAuthCertificate",
 					CertificateValidity:         30,
 					ValidCertificateAuthorities: []string{"sandbox_use1"},
 					SubordinateCa:               "infrastructure",
 					Team:                        "Infrastructure Security",
-					Email:                       "security@example.com",
+					Email:                       "security@coinbase.com",
 					CreatedBy:                   authClaim.Subject,
 					NodeAttestation:             []string{},
 				}

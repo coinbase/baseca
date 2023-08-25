@@ -171,7 +171,7 @@ Run the `baseca` Container
 **RELEASE:** Search for Latest [`baseca ghcr.io Published Release`](https://github.com/orgs/coinbase/packages/container/package/baseca) and update the `VERSION_SHA` container tag with the latest version.
 
 ```sh
-docker run -p 9090:9090 -e password=secret -v ~/.aws/:/home/baseca/.aws/:ro \
+docker run -p 9090:9090 -e database_credentials=secret -v ~/.aws/:/home/baseca/.aws/:ro \
   -v /path/to/baseca/config:/home/baseca/config ghcr.io/coinbase/baseca:VERSION_SHA
 ```
 
@@ -193,11 +193,11 @@ Compile the Golang Binary `baseca`
 ```sh
 # Darwin AMD64
 GOOS=darwin GOARCH=amd64 go build -o target/bin/darwin/baseca cmd/server/main.go
-password=secret ./target/bin/darwin/baseca
+database_credentials=secret ./target/bin/darwin/baseca
 
 # Linux AMD64
 GOOS=linux GOARCH=amd64 go build -o target/bin/linux/baseca cmd/server/main.go
-password=secret ./target/bin/linux/baseca
+database_credentials=secret ./target/bin/linux/baseca
 ```
 
 ### 3c. Run baseca as One-Off Execution (Option C)

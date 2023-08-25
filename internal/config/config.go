@@ -34,11 +34,12 @@ type DatabaseConfig struct {
 }
 
 type RedisConfig struct {
-	Endpoint  string `mapstructure:"cluster_endpoint"`
-	Port      string `mapstructure:"port"`
-	Duration  int    `mapstructure:"duration"`
-	Period    int    `mapstructure:"period"`
-	RateLimit int    `mapstructure:"rate_limit"`
+	Endpoint         string   `mapstructure:"cluster_endpoint"`
+	Port             string   `mapstructure:"port"`
+	Duration         int      `mapstructure:"duration"`
+	Period           int      `mapstructure:"period"`
+	RateLimit        int      `mapstructure:"rate_limit"`
+	ExcludeRateLimit []string `mapstructure:"exclude_rate_limit"`
 }
 
 type FirehoseConfig struct {

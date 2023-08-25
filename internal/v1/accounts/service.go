@@ -32,7 +32,7 @@ func (s *Service) CreateServiceAccount(ctx context.Context, req *apiv1.CreateSer
 	}
 
 	// Validate Subject Alternate Name and Regular Expression
-	err = s.validateSanInput(ctx, req.ServiceAccount, req.Environment, req.SubjectAlternativeNames, req.RegularExpression)
+	err = s.validateSanInputServiceAccount(ctx, req.ServiceAccount, req.Environment, req.SubjectAlternativeNames, req.RegularExpression)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, err.Error()), err)
 	}
@@ -66,11 +66,11 @@ func (s *Service) CreateServiceAccount(ctx context.Context, req *apiv1.CreateSer
 
 	payload, ok := ctx.Value(types.AuthorizationPayloadKey).(*authentication.Claims)
 	if !ok {
-		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), fmt.Errorf("service auth context missing"))
+		logger.RpcError(status.Error(codes.Internal, "internal server error"), fmt.Errorf("service auth context missing"))
 	}
 
 	// Production Service Accounts Require Attestation
-	if req.Environment == "production" {
+	if req.Environment == _production || req.NodeAttestation != nil {
 		if err = validateNodeAttestation(req.NodeAttestation); err != nil {
 			return nil, logger.RpcError(status.Error(codes.InvalidArgument, err.Error()), err)
 		}
@@ -92,12 +92,13 @@ func (s *Service) CreateServiceAccount(ctx context.Context, req *apiv1.CreateSer
 			ExtendedKey:                 req.ExtendedKey,
 			CertificateValidity:         int16(req.CertificateValidity),
 			SubordinateCa:               req.SubordinateCa,
+			Provisioned:                 false,
 			CreatedBy:                   payload.Subject,
 			CreatedAt:                   time.Now().UTC(),
 		}
 
 		if req.RegularExpression != nil {
-			account_arg.RegularExpression = sql.NullString{String: *req.RegularExpression, Valid: len(*req.RegularExpression) != 0}
+			account_arg.RegularExpression = sql.NullString{String: *req.RegularExpression, Valid: req.RegularExpression != nil}
 		}
 
 		raw_message, err := validator.MapToNullRawMessage(req.NodeAttestation.AwsIid.InstanceTags)
@@ -139,7 +140,7 @@ func (s *Service) CreateServiceAccount(ctx context.Context, req *apiv1.CreateSer
 		}
 
 		if req.RegularExpression != nil {
-			account_arg.RegularExpression = sql.NullString{String: *req.RegularExpression, Valid: len(*req.RegularExpression) != 0}
+			account_arg.RegularExpression = sql.NullString{String: *req.RegularExpression, Valid: req.RegularExpression != nil}
 		}
 
 		service, err = s.store.Writer.CreateServiceAccount(ctx, account_arg)

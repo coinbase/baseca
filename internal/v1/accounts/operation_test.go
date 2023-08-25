@@ -20,13 +20,13 @@ func TestDeleteServiceAccount(t *testing.T) {
 
 	cases := []struct {
 		name  string
-		req   *apiv1.ServiceAccountId
+		req   *apiv1.AccountId
 		build func(store *mock.MockStore)
 		check func(t *testing.T, res *emptypb.Empty, err error)
 	}{
 		{
 			name: "OK",
-			req: &apiv1.ServiceAccountId{
+			req: &apiv1.AccountId{
 				Uuid: service_account_id,
 			},
 			build: func(store *mock.MockStore) {
@@ -38,7 +38,7 @@ func TestDeleteServiceAccount(t *testing.T) {
 		},
 		{
 			name: "INVALID_UUID",
-			req: &apiv1.ServiceAccountId{
+			req: &apiv1.AccountId{
 				Uuid: "random_string",
 			},
 			build: func(store *mock.MockStore) {},
@@ -49,7 +49,7 @@ func TestDeleteServiceAccount(t *testing.T) {
 		},
 		{
 			name: "DB_ERROR",
-			req: &apiv1.ServiceAccountId{
+			req: &apiv1.AccountId{
 				Uuid: service_account_id,
 			},
 			build: func(store *mock.MockStore) {

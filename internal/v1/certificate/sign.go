@@ -42,9 +42,11 @@ func (c *Certificate) SignCSR(ctx context.Context, req *apiv1.CertificateSigning
 	}
 
 	if c.redis.Limit != 0 {
-		err = c.rateLimit(ctx, csr)
-		if err != nil {
-			return nil, logger.RpcError(status.Error(codes.ResourceExhausted, "rate limit exceeded"), err)
+		if !validator.Contains(c.redis.Excluded, service.ServiceAccount) {
+			err = c.rateLimit(ctx, csr)
+			if err != nil {
+				return nil, logger.RpcError(status.Error(codes.ResourceExhausted, "rate limit exceeded"), err)
+			}
 		}
 	}
 
@@ -59,8 +61,9 @@ func (c *Certificate) SignCSR(ctx context.Context, req *apiv1.CertificateSigning
 	}
 
 	return &apiv1.SignedCertificate{
-		Certificate:      certificate.Certificate,
-		CertificateChain: certificate.CertificateChain,
+		Certificate:                  certificate.Certificate,
+		IntermediateCertificateChain: certificate.IntermediateCertificateChain,
+		CertificateChain:             certificate.RootCertificateChain,
 		Metadata: &apiv1.CertificateParameter{
 			SerialNumber:            certificate.Metadata.SerialNumber,
 			CommonName:              certificate.Metadata.CommonName,
@@ -73,6 +76,7 @@ func (c *Certificate) SignCSR(ctx context.Context, req *apiv1.CertificateSigning
 			CertificateAuthorityArn: certificate.Metadata.CertificateAuthorityArn,
 		},
 	}, nil
+
 }
 
 func (c *Certificate) requestCertificate(ctx context.Context, authPayload *authentication.ServicePayload, certificateRequest *x509.CertificateRequest) (*db.CertificateResponseData, error) {

@@ -35,8 +35,9 @@ func (c *client) GenerateSignature(csr CertificateRequest, element []byte) (*[]b
 	}
 
 	err = parseCertificateFormat(signedCertificate, SignedCertificate{
-		CertificatePath:      csr.Output.Certificate,
-		CertificateChainPath: csr.Output.CertificateChain})
+		CertificatePath:                  csr.Output.Certificate,
+		IntermediateCertificateChainPath: csr.Output.IntermediateCertificateChain,
+		RootCertificateChainPath:         csr.Output.RootCertificateChain})
 
 	if err != nil {
 		return nil, nil, err
@@ -53,7 +54,7 @@ func (c *client) GenerateSignature(csr CertificateRequest, element []byte) (*[]b
 		return nil, nil, fmt.Errorf("error calculating signature of hash using pkcs1: %s", err)
 	}
 
-	fullChain, err := os.ReadFile(filepath.Clean(csr.Output.CertificateChain))
+	fullChain, err := os.ReadFile(filepath.Clean(csr.Output.RootCertificateChain))
 	if err != nil {
 		return nil, nil, fmt.Errorf("error retrieving full chain certificate: %s", err)
 	}

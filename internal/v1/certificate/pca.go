@@ -78,8 +78,8 @@ func (c *Certificate) issueEndEntityCertificate(auth *authentication.ServicePayl
 		return nil, fmt.Errorf("error parsing leaf certificate data")
 	}
 
-	intermediate_ca := fmt.Sprintf("%s_%s", auth.SubordinateCa, auth.Environment)
-	certificate, chained_certificate, err := crypto.BuildCertificateChain(intermediate_ca, certificateRaw, certificateAuthorityRaw)
+	caPath := fmt.Sprintf("%s_%s", auth.SubordinateCa, auth.Environment)
+	certificate, intermediate_chain, root_chain, err := crypto.BuildCertificateChain(caPath, certificateRaw, certificateAuthorityRaw)
 	if err != nil {
 		return nil, err
 	}
@@ -93,6 +93,7 @@ func (c *Certificate) issueEndEntityCertificate(auth *authentication.ServicePayl
 		IssuedDate:              issuedDate,
 		CaSerialNumber:          ca_certificate.SerialNumber,
 		CertificateAuthorityArn: ca_certificate.CertificateAuthorityArn,
+		Timestamp:               time.Now().UTC(),
 	}
 
 	event := firehose.ForwardedEventUploadEvent{
@@ -113,8 +114,9 @@ func (c *Certificate) issueEndEntityCertificate(auth *authentication.ServicePayl
 	}
 
 	return &db.CertificateResponseData{
-		Certificate:      certificate.String(),
-		CertificateChain: chained_certificate.String(),
-		Metadata:         certificate_data,
+		Certificate:                  certificate.String(),
+		IntermediateCertificateChain: intermediate_chain.String(),
+		RootCertificateChain:         root_chain.String(),
+		Metadata:                     certificate_data,
 	}, nil
 }

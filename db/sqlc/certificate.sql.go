@@ -38,6 +38,59 @@ func (q *Queries) GetCertificate(ctx context.Context, serialNumber string) (*Cer
 	return &i, err
 }
 
+const getSignedCertificateByMetadata = `-- name: GetSignedCertificateByMetadata :many
+SELECT serial_number, account, environment, extended_key, common_name, subject_alternative_name, expiration_date, issued_date, revoked, revoked_by, revoke_date, certificate_authority_arn FROM certificates
+WHERE serial_number LIKE $1 AND account LIKE $2 AND environment LIKE $3 AND extended_key LIKE $4
+`
+
+type GetSignedCertificateByMetadataParams struct {
+	SerialNumber string `json:"serial_number"`
+	Account      string `json:"account"`
+	Environment  string `json:"environment"`
+	ExtendedKey  string `json:"extended_key"`
+}
+
+func (q *Queries) GetSignedCertificateByMetadata(ctx context.Context, arg GetSignedCertificateByMetadataParams) ([]*Certificate, error) {
+	rows, err := q.db.QueryContext(ctx, getSignedCertificateByMetadata,
+		arg.SerialNumber,
+		arg.Account,
+		arg.Environment,
+		arg.ExtendedKey,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Certificate{}
+	for rows.Next() {
+		var i Certificate
+		if err := rows.Scan(
+			&i.SerialNumber,
+			&i.Account,
+			&i.Environment,
+			&i.ExtendedKey,
+			&i.CommonName,
+			pq.Array(&i.SubjectAlternativeName),
+			&i.ExpirationDate,
+			&i.IssuedDate,
+			&i.Revoked,
+			&i.RevokedBy,
+			&i.RevokeDate,
+			&i.CertificateAuthorityArn,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCertificateSubjectAlternativeName = `-- name: ListCertificateSubjectAlternativeName :many
 SELECT serial_number, account, environment, extended_key, common_name, subject_alternative_name, expiration_date, issued_date, revoked, revoked_by, revoke_date, certificate_authority_arn FROM certificates
 WHERE common_name = $1 OR $1 = ANY(subject_alternative_name)

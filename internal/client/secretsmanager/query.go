@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DATABASE_CREDENTIALS = "password"
+	DATABASE_CREDENTIALS = "database_credentials"
 	AUTH_PRIVATE_KEY     = "auth_private_key"
 	AUTH_PUBLIC_KEY      = "auth_public_key"
 )

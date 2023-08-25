@@ -19,38 +19,18 @@ info:
 clean: info
 	@ rm -rf target
 
-.PHONY: deps
-deps: info clean
+.PHONY: dependencies
+dependencies: info clean
 	@ go mod tidy
 
 .PHONY: test
-test: info clean deps
+test: info clean dependencies
 	@ go test -v -cover -short $$(go list ./... | grep -v /examples)
 
 .PHONY: build
 build: info clean
 	@ GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/darwin/$(SERVICE) cmd/server/main.go
 	@ GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/linux/$(SERVICE) cmd/server/main.go
-
-.PHONY: postgres
-postgres:
-	@ docker run --name baseca -p 5432:5432  -v /path/to/baseca/db/init:/db/init -e POSTGRES_USER=root -e POSTGRES_PASSWORD=secret -d postgres:latest
-
-.PHONY: createdb
-createdb:
-	@ docker exec -it baseca createdb --username=root --owner=root baseca
-
-.PHONY: dropdb
-dropdb:
-	@ docker exec -it baseca dropdb baseca
-
-.PHONY: migrateup
-migrateup:
-	@ migrate -path db/migration -database "postgresql://root:secret@localhost:5432/baseca?sslmode=disable" -verbose up
-
-.PHONY: migratedown
-migratedown:
-	@ migrate -path db/migration -database "postgresql://root:secret@localhost:5432/baseca?sslmode=disable" -verbose down
 
 .PHONY: sqlc
 sqlc:
@@ -66,7 +46,7 @@ gen: info clean
 
 .PHONY: server 
 server:
-	@ password=${DATABASE_CREDENTIALS} \
+	@ database_credentials=${DATABASE_CREDENTIALS} \
 		go run cmd/server/main.go
 
 .PHONY: lint
