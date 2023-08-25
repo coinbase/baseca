@@ -127,21 +127,16 @@ secrets_manager:
   secret_id: rds!cluster-bcc40600-5fa7-4877-aa35-529cae165937
 ```
 
-### 2. Launch Temporary EC2 Instance
-
-A temporary `Ubuntu` EC2 instance with the requirements below will need to be deployed to perform the database migration.
-
-- Egress Port 80 to 0.0.0.0/0
-- Egress Port 5432 to 0.0.0.0/0
-- Ingress Port 22 from Local IP
-- Deploy in Subnet Routable to RDS Cluster
-- Private IP within `db_ingress_cidr` CIDR Block
-
-### 3. Perform Database Migration
+### 2. Perform Database Migration
 
 [`golang-migrate Download Instructions`](https://github.com/golang-migrate/migrate/blob/master/cmd/migrate/README.md)
 
+**NOTE:** The RDS Cluster should be deployed within a private subnet which means the database migration must be done through an EC2 instance which (a) has network connectivity to the database and (b) is allowed by the security group from the database over Port 5432.
+
 ```sh
+# Launch an Ubuntu EC2 Instance
+# Documentation: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EC2_GetStarted.html
+
 cd /path/to/baseca
 
 # Copy Database Migration Files and RDS Certificate to EC2
@@ -164,7 +159,7 @@ curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.1/migr
 error: parse "postgresql://baseca:[PASSWORD]@[RDS_WRITER_ENDPOINT]:5432/baseca?sslmode=disable": net/url: invalid userinfo
 ```
 
-### 4. Create Initial Admin User
+### 3. Create Initial Admin User
 
 ```sh
 # Update db/init/init.sql for Admin User

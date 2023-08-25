@@ -17,6 +17,7 @@ redis:
   cluster_endpoint: xxxxxx.xxxxxx.000000.0001.use1.cache.amazonaws.com
   port: 6379
   rate_limit: 20
+  exclude_rate_limit: ["example_service"]
 
 domains:
   - example.com

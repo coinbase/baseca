@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -42,7 +41,7 @@ func WriteKeyToFile(service string, privateKey types.AsymmetricKey) error {
 		return fmt.Errorf("private key format not supported")
 	}
 
-	if err := ioutil.WriteFile(filePath, pem.EncodeToMemory(pemBlock), os.ModePerm); err != nil {
+	if err := os.WriteFile(filePath, pem.EncodeToMemory(pemBlock), os.ModePerm); err != nil {
 		return err
 	}
 

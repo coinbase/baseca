@@ -10,7 +10,7 @@ import (
 	"github.com/coinbase/baseca/internal/types"
 )
 
-var backoffSchedule = []time.Duration{
+var BackoffSchedule = []time.Duration{
 	1 * time.Second,
 	2 * time.Second,
 	4 * time.Second,
@@ -22,7 +22,7 @@ func LockfileBackoff(lockfilePath string) error {
 	_, err := os.OpenFile(filepath.Clean(lockfilePath), os.O_RDONLY, 0400)
 	if err == nil {
 		// Backoff Until Lock File Removed
-		for _, backoff := range backoffSchedule {
+		for _, backoff := range BackoffSchedule {
 			_, err = os.OpenFile(filepath.Clean(lockfilePath), os.O_RDONLY, 0400)
 			if errors.Is(err, os.ErrNotExist) {
 				return nil

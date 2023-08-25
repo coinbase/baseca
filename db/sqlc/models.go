@@ -25,6 +25,7 @@ type Account struct {
 	ExtendedKey                 string         `json:"extended_key"`
 	CertificateValidity         int16          `json:"certificate_validity"`
 	SubordinateCa               string         `json:"subordinate_ca"`
+	Provisioned                 bool           `json:"provisioned"`
 	NodeAttestation             []string       `json:"node_attestation"`
 	CreatedAt                   time.Time      `json:"created_at"`
 	CreatedBy                   uuid.UUID      `json:"created_by"`
@@ -67,6 +68,7 @@ type Provisioner struct {
 	ValidSubjectAlternateNames []string       `json:"valid_subject_alternate_names"`
 	ExtendedKeys               []string       `json:"extended_keys"`
 	MaxCertificateValidity     int16          `json:"max_certificate_validity"`
+	NodeAttestation            []string       `json:"node_attestation"`
 	CreatedAt                  time.Time      `json:"created_at"`
 	CreatedBy                  uuid.UUID      `json:"created_by"`
 }

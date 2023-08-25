@@ -28,12 +28,13 @@ INSERT INTO accounts (
     extended_key,
     certificate_validity,
     subordinate_ca,
+    provisioned,
     node_attestation,
     created_at,
     created_by
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15
-) RETURNING client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, node_attestation, created_at, created_by
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+) RETURNING client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, provisioned, node_attestation, created_at, created_by
 `
 
 type CreateServiceAccountParams struct {
@@ -49,6 +50,7 @@ type CreateServiceAccountParams struct {
 	ExtendedKey                 string         `json:"extended_key"`
 	CertificateValidity         int16          `json:"certificate_validity"`
 	SubordinateCa               string         `json:"subordinate_ca"`
+	Provisioned                 bool           `json:"provisioned"`
 	NodeAttestation             []string       `json:"node_attestation"`
 	CreatedAt                   time.Time      `json:"created_at"`
 	CreatedBy                   uuid.UUID      `json:"created_by"`
@@ -68,6 +70,7 @@ func (q *Queries) CreateServiceAccount(ctx context.Context, arg CreateServiceAcc
 		arg.ExtendedKey,
 		arg.CertificateValidity,
 		arg.SubordinateCa,
+		arg.Provisioned,
 		pq.Array(arg.NodeAttestation),
 		arg.CreatedAt,
 		arg.CreatedBy,
@@ -86,6 +89,7 @@ func (q *Queries) CreateServiceAccount(ctx context.Context, arg CreateServiceAcc
 		&i.ExtendedKey,
 		&i.CertificateValidity,
 		&i.SubordinateCa,
+		&i.Provisioned,
 		pq.Array(&i.NodeAttestation),
 		&i.CreatedAt,
 		&i.CreatedBy,
@@ -103,8 +107,104 @@ func (q *Queries) DeleteServiceAccount(ctx context.Context, clientID uuid.UUID) 
 	return err
 }
 
+const getServiceAccountByMetadata = `-- name: GetServiceAccountByMetadata :many
+SELECT client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, provisioned, node_attestation, created_at, created_by FROM accounts
+WHERE service_account LIKE $1 AND environment LIKE $2 AND extended_key LIKE $3
+`
+
+type GetServiceAccountByMetadataParams struct {
+	ServiceAccount string `json:"service_account"`
+	Environment    string `json:"environment"`
+	ExtendedKey    string `json:"extended_key"`
+}
+
+func (q *Queries) GetServiceAccountByMetadata(ctx context.Context, arg GetServiceAccountByMetadataParams) ([]*Account, error) {
+	rows, err := q.db.QueryContext(ctx, getServiceAccountByMetadata, arg.ServiceAccount, arg.Environment, arg.ExtendedKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Account{}
+	for rows.Next() {
+		var i Account
+		if err := rows.Scan(
+			&i.ClientID,
+			&i.ApiToken,
+			&i.ServiceAccount,
+			&i.Environment,
+			&i.Team,
+			&i.Email,
+			&i.RegularExpression,
+			pq.Array(&i.ValidSubjectAlternateName),
+			pq.Array(&i.ValidCertificateAuthorities),
+			&i.ExtendedKey,
+			&i.CertificateValidity,
+			&i.SubordinateCa,
+			&i.Provisioned,
+			pq.Array(&i.NodeAttestation),
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getServiceAccountBySAN = `-- name: GetServiceAccountBySAN :many
+SELECT client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, provisioned, node_attestation, created_at, created_by FROM accounts
+WHERE valid_subject_alternate_name = ANY($1::string[])
+`
+
+func (q *Queries) GetServiceAccountBySAN(ctx context.Context, dollar_1 []string) ([]*Account, error) {
+	rows, err := q.db.QueryContext(ctx, getServiceAccountBySAN, pq.Array(dollar_1))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*Account{}
+	for rows.Next() {
+		var i Account
+		if err := rows.Scan(
+			&i.ClientID,
+			&i.ApiToken,
+			&i.ServiceAccount,
+			&i.Environment,
+			&i.Team,
+			&i.Email,
+			&i.RegularExpression,
+			pq.Array(&i.ValidSubjectAlternateName),
+			pq.Array(&i.ValidCertificateAuthorities),
+			&i.ExtendedKey,
+			&i.CertificateValidity,
+			&i.SubordinateCa,
+			&i.Provisioned,
+			pq.Array(&i.NodeAttestation),
+			&i.CreatedAt,
+			&i.CreatedBy,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getServiceAccounts = `-- name: GetServiceAccounts :many
-SELECT client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, node_attestation, created_at, created_by FROM accounts
+SELECT client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, provisioned, node_attestation, created_at, created_by FROM accounts
 WHERE service_account = $1
 `
 
@@ -130,6 +230,7 @@ func (q *Queries) GetServiceAccounts(ctx context.Context, serviceAccount string)
 			&i.ExtendedKey,
 			&i.CertificateValidity,
 			&i.SubordinateCa,
+			&i.Provisioned,
 			pq.Array(&i.NodeAttestation),
 			&i.CreatedAt,
 			&i.CreatedBy,
@@ -148,7 +249,7 @@ func (q *Queries) GetServiceAccounts(ctx context.Context, serviceAccount string)
 }
 
 const getServiceUUID = `-- name: GetServiceUUID :one
-SELECT client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, node_attestation, created_at, created_by FROM accounts
+SELECT client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, provisioned, node_attestation, created_at, created_by FROM accounts
 WHERE client_id = $1
 `
 
@@ -168,6 +269,7 @@ func (q *Queries) GetServiceUUID(ctx context.Context, clientID uuid.UUID) (*Acco
 		&i.ExtendedKey,
 		&i.CertificateValidity,
 		&i.SubordinateCa,
+		&i.Provisioned,
 		pq.Array(&i.NodeAttestation),
 		&i.CreatedAt,
 		&i.CreatedBy,
@@ -176,7 +278,7 @@ func (q *Queries) GetServiceUUID(ctx context.Context, clientID uuid.UUID) (*Acco
 }
 
 const listServiceAccounts = `-- name: ListServiceAccounts :many
-SELECT client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, node_attestation, created_at, created_by FROM accounts
+SELECT client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, provisioned, node_attestation, created_at, created_by FROM accounts
 ORDER BY service_account
 LIMIT $1
 OFFSET $2
@@ -209,6 +311,7 @@ func (q *Queries) ListServiceAccounts(ctx context.Context, arg ListServiceAccoun
 			&i.ExtendedKey,
 			&i.CertificateValidity,
 			&i.SubordinateCa,
+			&i.Provisioned,
 			pq.Array(&i.NodeAttestation),
 			&i.CreatedAt,
 			&i.CreatedBy,
@@ -231,7 +334,7 @@ UPDATE accounts
 SET 
     node_attestation = $2
 WHERE client_id = $1
-RETURNING client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, node_attestation, created_at, created_by
+RETURNING client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, provisioned, node_attestation, created_at, created_by
 `
 
 type UpdateInstanceIdentityNodeAttestorParams struct {
@@ -255,6 +358,7 @@ func (q *Queries) UpdateInstanceIdentityNodeAttestor(ctx context.Context, arg Up
 		&i.ExtendedKey,
 		&i.CertificateValidity,
 		&i.SubordinateCa,
+		&i.Provisioned,
 		pq.Array(&i.NodeAttestation),
 		&i.CreatedAt,
 		&i.CreatedBy,
@@ -276,7 +380,7 @@ SET
     subordinate_ca = $10,
     node_attestation = $11
 WHERE client_id = $1
-RETURNING client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, node_attestation, created_at, created_by
+RETURNING client_id, api_token, service_account, environment, team, email, regular_expression, valid_subject_alternate_name, valid_certificate_authorities, extended_key, certificate_validity, subordinate_ca, provisioned, node_attestation, created_at, created_by
 `
 
 type UpdateServiceAccountParams struct {
@@ -321,6 +425,7 @@ func (q *Queries) UpdateServiceAccount(ctx context.Context, arg UpdateServiceAcc
 		&i.ExtendedKey,
 		&i.CertificateValidity,
 		&i.SubordinateCa,
+		&i.Provisioned,
 		pq.Array(&i.NodeAttestation),
 		&i.CreatedAt,
 		&i.CreatedBy,

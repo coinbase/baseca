@@ -106,10 +106,6 @@ func (c *Certificate) validateCsrParameters(parameters *apiv1.OperationsSignRequ
 		}
 	}
 
-	expirationDate := time.Now().UTC().AddDate(0, 0, int(parameters.CertificateAuthority.Validity)).UTC()
-	if expirationDate.Before(time.Now().UTC().Add(time.Minute).UTC()) {
-		return fmt.Errorf("certificate expiration before current time utc")
-	}
 	return nil
 }
 

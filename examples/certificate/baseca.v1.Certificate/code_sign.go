@@ -1,14 +1,14 @@
-package main
+package examples
 
 import (
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	baseca "github.com/coinbase/baseca/pkg/client"
 )
 
-func main() {
+func CodeSign() {
 	client_id := "[CLIENT_ID]"
 	client_token := "[CLIENT_TOKEN]"
 
@@ -29,14 +29,15 @@ func main() {
 		PublicKeyAlgorithm:    x509.RSA,
 		KeySize:               4096,
 		Output: baseca.Output{
-			PrivateKey:                "/tmp/private.key",
-			Certificate:               "/tmp/certificate.crt",
-			CertificateChain:          "/tmp/certificate_chain.crt",
-			CertificateSigningRequest: "/tmp/certificate_request.csr",
+			PrivateKey:                   "/tmp/private.key",
+			Certificate:                  "/tmp/certificate.crt",
+			IntermediateCertificateChain: "/tmp/intermediate_chain.crt",
+			RootCertificateChain:         "/tmp/root_chain.crt",
+			CertificateSigningRequest:    "/tmp/certificate_request.csr",
 		},
 	}
 
-	data, _ := ioutil.ReadFile("/bin/chmod")
+	data, _ := os.ReadFile("/bin/chmod")
 	signature, chain, err := client.GenerateSignature(metadata, data)
 	if err != nil {
 		panic(err)

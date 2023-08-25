@@ -23,6 +23,16 @@ type ServicePayload struct {
 	SANRegularExpression        string    `json:"regular_expression"`
 }
 
+type ProvisionerAccountPayload struct {
+	ClientId                   uuid.UUID `json:"client_id"`
+	ProvisionerAccount         string    `json:"provisioner_account"`
+	Environments               []string  `json:"environments"`
+	ValidSubjectAlternateNames []string  `json:"subject_alternate_names"`
+	MaxCertificateValidity     uint32    `json:"max_certificate_validity"`
+	ExtendedKeys               []string  `json:"certificate_request_extension"`
+	RegularExpression          string    `json:"regular_expression"`
+}
+
 type EnrollmentPayload struct {
 	SerialNumber string `json:"serial_number"`
 }

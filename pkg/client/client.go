@@ -14,6 +14,7 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 // var Endpoints Environment
@@ -52,11 +53,13 @@ type Provider struct {
 }
 
 type Output struct {
-	CertificateSigningRequest string
-	Certificate               string
-	CertificateChain          string
-	PrivateKey                string
+	CertificateSigningRequest    string
+	Certificate                  string
+	IntermediateCertificateChain string
+	RootCertificateChain         string
+	PrivateKey                   string
 }
+
 type CertificateRequest struct {
 	CommonName            string
 	SubjectAlternateNames []string
@@ -85,6 +88,7 @@ type client struct {
 	authentication Authentication
 	attestation    string
 	Certificate    apiv1.CertificateClient
+	Service        apiv1.ServiceClient
 }
 
 const (
@@ -95,6 +99,14 @@ const (
 
 type CertificateClient interface {
 	SignCSR(ctx context.Context, in *apiv1.CertificateSigningRequest, opts ...grpc.CallOption) (*apiv1.SignedCertificate, error)
+	OperationsSignCSR(ctx context.Context, in *apiv1.OperationsSignRequest, opts ...grpc.CallOption) (*apiv1.SignedCertificate, error)
+	QueryCertificateMetadata(ctx context.Context, in *apiv1.QueryCertificateMetadataRequest, opts ...grpc.CallOption) (*apiv1.CertificatesParameter, error)
+}
+
+type ServiceClient interface {
+	ProvisionServiceAccount(ctx context.Context, in *apiv1.ProvisionServiceAccountRequest, opts ...grpc.CallOption) (*apiv1.ProvisionServiceAccountResponse, error)
+	GetServiceAccountByMetadata(ctx context.Context, in *apiv1.GetServiceAccountMetadataRequest, opts ...grpc.CallOption) (*apiv1.ServiceAccounts, error)
+	DeleteProvisionedServiceAccount(ctx context.Context, in *apiv1.AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 func LoadDefaultConfiguration(configuration Configuration, client_id, client_token, attestation string) (*client, error) {
@@ -127,9 +139,12 @@ func LoadDefaultConfiguration(configuration Configuration, client_id, client_tok
 
 func (c *client) methodInterceptor() grpc.UnaryClientInterceptor {
 	methodOptions := map[string]grpc.UnaryClientInterceptor{
-		"/baseca.v1.Certificate/SignCSR":             c.clientAuthUnaryInterceptor,
-		"/baseca.v1.Certificate/OperationsSignCSR":   c.clientAuthUnaryInterceptor,
-		"/baseca.v1.Service/ProvisionServiceAccount": c.clientAuthUnaryInterceptor,
+		"/baseca.v1.Certificate/SignCSR":                     c.clientAuthUnaryInterceptor,
+		"/baseca.v1.Certificate/OperationsSignCSR":           c.clientAuthUnaryInterceptor,
+		"/baseca.v1.Certificate/QueryCertificateMetadata":    c.clientAuthUnaryInterceptor,
+		"/baseca.v1.Service/ProvisionServiceAccount":         c.clientAuthUnaryInterceptor,
+		"/baseca.v1.Service/GetServiceAccountByMetadata":     c.clientAuthUnaryInterceptor,
+		"/baseca.v1.Service/DeleteProvisionedServiceAccount": c.clientAuthUnaryInterceptor,
 	}
 	return mapMethodInterceptor(methodOptions)
 }

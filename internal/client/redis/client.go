@@ -27,9 +27,10 @@ type RedisClient struct {
 	Config *config.RedisConfig
 
 	// Sliding Window
-	Limit  int
-	Period time.Duration
-	Window time.Duration
+	Limit    int
+	Excluded []string
+	Period   time.Duration
+	Window   time.Duration
 }
 
 func NewRedisClient(config *config.Config) (*RedisClient, error) {
@@ -54,10 +55,11 @@ func NewRedisClient(config *config.Config) (*RedisClient, error) {
 	}
 
 	return &RedisClient{
-		Client: client,
-		Config: redisConfig,
-		Limit:  redisConfig.RateLimit,
-		Period: time.Duration(redisConfig.Period) * time.Minute,
-		Window: time.Duration(redisConfig.Duration) * time.Minute,
+		Client:   client,
+		Config:   redisConfig,
+		Limit:    redisConfig.RateLimit,
+		Excluded: redisConfig.ExcludeRateLimit,
+		Period:   time.Duration(redisConfig.Period) * time.Minute,
+		Window:   time.Duration(redisConfig.Duration) * time.Minute,
 	}, nil
 }

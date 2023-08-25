@@ -48,6 +48,7 @@ type CertificateMetadata struct {
 	Revoked                 bool
 	RevokedBy               string
 	RevokeDate              time.Time
+	Timestamp               time.Time
 }
 
 type CertificateRequest struct {

@@ -11,13 +11,13 @@ import (
 )
 
 const (
-	_role_regex_pattern  = `^arn:aws:iam::\d{12}:role\/[a-zA-Z_0-9+=,.@-]+$`
-	_sg_regex_pattern    = `^sg-[a-zA-Z0-9]+$`
-	_instance_id_pattern = `^i-[a-fA-F0-9]{8,17}$`
+	_role_regex_pattern             = `^arn:aws:iam::\d{12}:role\/[a-zA-Z_0-9+=,.@-]+$`
+	_instance_profile_regex_pattern = `^arn:aws:iam::\d{12}:instance-profile/[a-zA-Z0-9+=,.@\-_/]+`
+	_sg_regex_pattern               = `^sg-[a-zA-Z0-9]+$`
+	_instance_id_pattern            = `^i-[a-fA-F0-9]{8,17}$`
 )
 
-// Create Service Account: Check if Same SAN Exists within Other Service Account
-func (s *Service) validateSanInput(ctx context.Context, service_account string, environment string, request_san []string, pattern *string) error {
+func (s *Service) validateSanInputServiceAccount(ctx context.Context, service_account string, environment string, request_san []string, pattern *string) error {
 	var page_id = int32(1)
 	var page_size = int32(25)
 	var sans [][]string
@@ -50,7 +50,7 @@ func (s *Service) validateSanInput(ctx context.Context, service_account string, 
 		}
 		services, err := s.store.Reader.ListServiceAccounts(ctx, arg)
 		if err != nil {
-			return fmt.Errorf("error listing service accounts during san validation")
+			return fmt.Errorf("error listing service accounts during san validation: %s", err)
 		}
 		if len(services) == 0 {
 			break
@@ -60,6 +60,7 @@ func (s *Service) validateSanInput(ctx context.Context, service_account string, 
 			if service_account == elem.ServiceAccount && environment == elem.Environment {
 				continue
 			}
+
 			sans = append(sans, elem.ValidSubjectAlternateName)
 		}
 		page_id += 1
@@ -72,7 +73,65 @@ func (s *Service) validateSanInput(ctx context.Context, service_account string, 
 			}
 		}
 	}
+	return nil
+}
 
+func (s *Service) validateSanInputProvisionerAccount(ctx context.Context, provisioner_account string, environments []string, request_san []string, pattern string) error {
+	var page_id = int32(1)
+	var page_size = int32(25)
+	var sans [][]string
+
+	if len(provisioner_account) == 0 {
+		return fmt.Errorf("invalid provisioner_account parameter")
+	}
+
+	if len(pattern) == 0 && len(request_san) == 0 {
+		return fmt.Errorf("subject_alternative_names and regular_expression cannot both be empty")
+	}
+
+	if len(pattern) != 0 {
+		_, err := regexp.Compile(pattern)
+		if err != nil {
+			return fmt.Errorf("invalid regular_expressing pattern")
+		}
+	}
+
+	for _, fqdn := range request_san {
+		if !validator.IsValidateDomain(fqdn) {
+			return fmt.Errorf("invalid domain [%s]", fqdn)
+		}
+	}
+
+	for {
+		arg := db.ListProvisionerAccountsParams{
+			Limit:  page_size,
+			Offset: (page_id - 1) * page_size,
+		}
+		services, err := s.store.Reader.ListProvisionerAccounts(ctx, arg)
+		if err != nil {
+			return fmt.Errorf("error listing provisioner accounts during san validation")
+		}
+		if len(services) == 0 {
+			break
+		}
+		for _, elem := range services {
+			// Do Not Include Provisioner Account with Same Name and Environment
+			if provisioner_account == elem.ProvisionerAccount {
+				continue
+			}
+
+			sans = append(sans, elem.ValidSubjectAlternateNames)
+		}
+		page_id += 1
+	}
+
+	for _, san := range sans {
+		for _, elem := range san {
+			if validator.Contains(request_san, elem) {
+				return fmt.Errorf("subject alternative name (san) %s exists in another provisioner account", request_san)
+			}
+		}
+	}
 	return nil
 }
 
@@ -95,6 +154,7 @@ func (s *Service) validateCertificateParameters(certificateAuthorities []string,
 		return fmt.Errorf("invalid certificate_validity parameter")
 	}
 
+	// Determine Certificate Validity Greater than CA Validity
 	for _, certificateAuthority := range certificateAuthorities {
 		caValidity := s.acmConfig[certificateAuthority].CaActiveDay
 		if caValidity <= int(certificateValidity) {
@@ -126,7 +186,7 @@ func validateAwsIidMetadata(iid *apiv1.AWSInstanceIdentityDocument) error {
 	var validAttestation = false
 
 	if iid.RoleArn != "" {
-		err = validateRegularExpression(iid.RoleArn, _role_regex_pattern)
+		err = validateRegularExpression(iid.RoleArn, _instance_profile_regex_pattern)
 		if err {
 			return fmt.Errorf("invalid aws_iid instance role arn [%s]", iid.RoleArn)
 		}
