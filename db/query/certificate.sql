@@ -33,3 +33,7 @@ OFFSET $2;
 UPDATE certificates
 SET revoked = TRUE, revoke_date = $2, revoked_by = $3
 WHERE serial_number = $1;
+
+-- name: GetSignedCertificateByMetadata :many
+SELECT * FROM certificates
+WHERE serial_number LIKE $1 AND account LIKE $2 AND environment LIKE $3 AND extended_key LIKE $4;

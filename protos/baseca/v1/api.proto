@@ -43,6 +43,7 @@ message SignedCertificate {
   string certificate = 1;
   string certificate_chain = 2;
   CertificateParameter metadata = 3;
+  string intermediate_certificate_chain = 4;
 }
 
 message CertificateSerialNumber {
@@ -68,10 +69,15 @@ message RevokeCertificateResponse {
 
 message OperationsSignRequest {
   string certificate_signing_request = 1;
-  CertificateAuthorityParameter certificate_authority = 2;
+  optional CertificateAuthorityParameter certificate_authority = 2;
   string service_account = 3;
   string environment = 4;
-  string extended_key = 5;}
+  string extended_key = 5;
+}
+
+message Environment {
+  string environment = 1;
+}
 
 service Certificate {
   rpc SignCSR (CertificateSigningRequest) returns (SignedCertificate);
@@ -79,6 +85,15 @@ service Certificate {
   rpc ListCertificates (ListCertificatesRequest) returns (CertificatesParameter);
   rpc RevokeCertificate (RevokeCertificateRequest) returns (RevokeCertificateResponse);
   rpc OperationsSignCSR (OperationsSignRequest) returns (SignedCertificate);
+  rpc QueryCertificateMetadata (QueryCertificateMetadataRequest) returns (CertificatesParameter);
+}
+
+message QueryCertificateMetadataRequest {
+  string serial_number = 1;
+  string account = 2;
+  string environment = 3;
+  string extended_key = 4;
+  repeated string subject_alternative_name = 5;
 }
 
 message User {
@@ -185,14 +200,63 @@ message ServiceAccount {
   string extended_key = 7;
   NodeAttestation node_attestation = 8;
   int32 certificate_validity = 9;
-  string team = 10;
-  string email = 11;
-  google.protobuf.Timestamp created_at = 12;
-  string created_by = 13;
+  string subordinate_ca = 10;
+  bool provisioned = 11;
+  string team = 12;
+  string email = 13;
+  google.protobuf.Timestamp created_at = 14;
+  string created_by = 15;
 }
 
 message ServiceAccounts {
   repeated ServiceAccount service_accounts = 1;
+}
+
+message CreateProvisionerAccountRequest {
+  string provisioner_account = 1;
+  repeated string environments = 2;
+  string regular_expression = 3;
+  repeated string subject_alternative_names = 4;
+  repeated string extended_keys = 5;
+  uint32 max_certificate_validity = 6;
+  optional NodeAttestation node_attestation = 7;
+  string team = 8;
+  string email = 9;
+}
+
+message CreateProvisionerAccountResponse {
+  string client_id = 1;
+  string client_token = 2;
+  string provisioner_account = 3;
+  repeated string environments = 4;
+  string regular_expression = 5;
+  repeated string subject_alternative_names = 6;
+  repeated string extended_keys = 8;
+  NodeAttestation node_attestation = 9;
+  uint32 max_certificate_validity = 10;
+  string team = 11;
+  string email = 12;
+  google.protobuf.Timestamp created_at = 13;
+  string created_by = 14;
+}
+
+message ProvisionerAccounts {
+  repeated ProvisionerAccount provisioner_accounts = 1;
+}
+
+message ProvisionerAccount {
+  string client_id = 1;
+  string provisioner_account = 2;
+  repeated string environments = 3;
+  string regular_expression = 4;
+  repeated string subject_alternative_names = 5;
+  repeated string extended_keys = 7;
+  NodeAttestation node_attestation = 8;
+  uint32 max_certificate_validity = 9;
+  string team = 10;
+  string email = 11;
+  google.protobuf.Timestamp created_at = 12;
+  string created_by = 13;
 }
 
 message NodeAttestation {
@@ -209,29 +273,61 @@ message AWSInstanceIdentityDocument {
   map<string, string> instance_tags = 7;
 }
 
-message ServiceAccountId {
+message AccountId {
   string uuid = 1;
 }
 
-message ServiceAccountName{
+message GetServiceAccountMetadataRequest{
   string service_account = 1;
+  string environment = 2;
+  string extended_key = 3;
 }
 
 message ProvisionServiceAccountRequest {
-  CreateServiceAccountRequest account = 1;
+  string service_account = 1;
+  string environment = 2;
+  string regular_expression = 3;
+  repeated string subject_alternative_names = 4;
+  repeated string certificate_authorities = 5;
+  string extended_key = 6;
+  int32 certificate_validity = 7;
+  string subordinate_ca = 8;
+  NodeAttestation node_attestation = 9;
+  string team = 10;
+  string email = 11;
 }
 
 message ProvisionServiceAccountResponse {
-  CreateServiceAccountResponse account = 1;
+  string client_id = 1;
+  string client_token = 2;
+  string service_account = 3;
+  string environment = 4;
+  string regular_expression = 5;
+  repeated string subject_alternative_names = 6;
+  repeated string certificate_authorities = 7;
+  string extended_key = 8;
+  NodeAttestation node_attestation = 9;
+  int32 certificate_validity = 10;
+  string subordinate_ca = 11;
+  string team = 12;
+  string email = 13;
+  google.protobuf.Timestamp created_at = 14;
+  string created_by = 15;
 }
+
 
 service Service {
   rpc CreateServiceAccount (CreateServiceAccountRequest) returns (CreateServiceAccountResponse);
+  rpc CreateProvisionerAccount(CreateProvisionerAccountRequest) returns (CreateProvisionerAccountResponse);
+  rpc GetProvisionerAccount (AccountId) returns (ProvisionerAccount);
+  rpc GetServiceAccount (AccountId) returns (ServiceAccount);
+  rpc GetServiceAccountMetadata (GetServiceAccountMetadataRequest) returns (ServiceAccounts);
+  rpc DeleteServiceAccount (AccountId) returns (google.protobuf.Empty);
+  rpc DeleteProvisionedServiceAccount (AccountId) returns (google.protobuf.Empty);
+  rpc DeleteProvisionerAccount (AccountId) returns (google.protobuf.Empty);
   rpc ProvisionServiceAccount (ProvisionServiceAccountRequest) returns (ProvisionServiceAccountResponse);
   rpc ListServiceAccounts (QueryParameter) returns (ServiceAccounts);
-  rpc GetServiceAccountUuid (ServiceAccountId) returns (ServiceAccount);
-  rpc GetServiceAccountName (ServiceAccountName) returns (ServiceAccounts);
-  rpc DeleteServiceAccount (ServiceAccountId) returns (google.protobuf.Empty);
+  rpc ListProvisionerAccounts (QueryParameter) returns (ProvisionerAccounts);
 }
 
 message HealthCheckRequest {

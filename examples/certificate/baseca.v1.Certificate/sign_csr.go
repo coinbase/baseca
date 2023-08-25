@@ -1,4 +1,4 @@
-package main
+package examples
 
 import (
 	"crypto/x509"
@@ -8,7 +8,7 @@ import (
 	baseca "github.com/coinbase/baseca/pkg/client"
 )
 
-func main() {
+func SignCSR() {
 	client_id := "[CLIENT_ID]"
 	client_token := "[CLIENT_TOKEN]"
 
@@ -29,10 +29,11 @@ func main() {
 		PublicKeyAlgorithm:    x509.RSA,
 		KeySize:               4096,
 		Output: baseca.Output{
-			PrivateKey:                "/tmp/private.key",
-			Certificate:               "/tmp/certificate.crt",
-			CertificateChain:          "/tmp/certificate_chain.crt",
-			CertificateSigningRequest: "/tmp/certificate_request.csr",
+			PrivateKey:                   "/tmp/private.key",
+			Certificate:                  "/tmp/certificate.crt",
+			IntermediateCertificateChain: "/tmp/intermediate_chain.crt",
+			RootCertificateChain:         "/tmp/root_chain.crt",
+			CertificateSigningRequest:    "/tmp/certificate_request.csr",
 		},
 	}
 

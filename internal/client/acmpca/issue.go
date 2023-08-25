@@ -18,6 +18,9 @@ import (
 
 const (
 	_subordinateCACertificate_PathLen0_V1 = "arn:aws:acm-pca:::template/SubordinateCACertificate_PathLen0/V1"
+	_codeSigningCertificate_V1            = "arn:aws:acm-pca:::template/CodeSigningCertificate/V1"
+	_endEntityServerAuthCertificate_V1    = "arn:aws:acm-pca:::template/EndEntityServerAuthCertificate/V1"
+	_endEntityClientAuthCertificate_V1    = "arn:aws:acm-pca:::template/EndEntityClientAuthCertificate/V1"
 )
 
 func (c *PrivateCaClient) IssueCertificateFromTemplate(parameters *apiv1.CertificateAuthorityParameter, csr []byte, template string) (*x509.Certificate, error) {

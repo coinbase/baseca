@@ -31,6 +31,9 @@ var (
 		"KEY_COMPROMISE",
 		"CERTIFICATE_AUTHORITY_COMPROMISE",
 	}
+
+	_default_signing_algorithm = "SHA512WITHRSA"
+	_default_validity          = 365
 )
 
 func (c *Certificate) RevokeCertificate(ctx context.Context, req *apiv1.RevokeCertificateRequest) (*apiv1.RevokeCertificateResponse, error) {
@@ -98,32 +101,72 @@ func (c *Certificate) RevokeCertificate(ctx context.Context, req *apiv1.RevokeCe
 }
 
 func (c *Certificate) OperationsSignCSR(ctx context.Context, req *apiv1.OperationsSignRequest) (*apiv1.SignedCertificate, error) {
+	var certificateAuthorityParameters *apiv1.CertificateAuthorityParameter
+
 	if err := c.validateCsrParameters(req); err != nil {
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid certificate signing request (csr)"), err)
 	}
 
 	if _, ok := types.CertificateRequestExtension[req.ExtendedKey]; !ok {
-		return nil, status.Error(codes.InvalidArgument, "invalid certificate extended key")
+		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid certificate extended key"), fmt.Errorf("invalid certificate extended key"))
 	}
 
-	parameters := types.CertificateParameters{
-		Region:     req.CertificateAuthority.Region,
-		CaArn:      req.CertificateAuthority.CaArn,
-		AssumeRole: req.CertificateAuthority.AssumeRole,
-		RoleArn:    req.CertificateAuthority.RoleArn,
-		Validity:   int(req.CertificateAuthority.Validity),
-	}
+	// Query Account Metadata to Discover Upstream Private CA
+	if req.CertificateAuthority == nil {
+		arg := db.GetServiceAccountByMetadataParams{
+			ServiceAccount: req.ServiceAccount,
+			Environment:    req.Environment,
+			ExtendedKey:    req.ExtendedKey,
+		}
 
+		serviceAccount, err := c.store.Reader.GetServiceAccountByMetadata(ctx, arg)
+		if err != nil {
+			logger.RpcError(status.Error(codes.Internal, "error issuing certificate [OperationsSignCSR]"), fmt.Errorf("error querying service account metadata [%s]: %s", req.ServiceAccount, err))
+		}
+
+		if len(serviceAccount) != 1 {
+			return nil, logger.RpcError(status.Error(codes.Internal, "error querying service account(s)"), fmt.Errorf("[%d] service accounts found for [%s] in environment [%s], cleanup before issuing long-lived certificate", len(serviceAccount), req.ServiceAccount, req.Environment))
+		}
+
+		accountMetadata := serviceAccount[0]
+		certificateAuthority := accountMetadata.ValidCertificateAuthorities[0]
+		certificateAuthorityParameters = &apiv1.CertificateAuthorityParameter{
+			Region:        c.acmConfig[certificateAuthority].Region,
+			CaArn:         c.acmConfig[certificateAuthority].CaArn,
+			AssumeRole:    c.acmConfig[certificateAuthority].AssumeRole,
+			RoleArn:       c.acmConfig[certificateAuthority].RoleArn,
+			Validity:      int32(_default_validity),
+			SignAlgorithm: _default_signing_algorithm,
+		}
+	} else {
+		expirationDate := time.Now().UTC().AddDate(0, 0, int(req.CertificateAuthority.Validity)).UTC()
+		if expirationDate.Before(time.Now().UTC().Add(time.Minute).UTC()) {
+			logger.RpcError(status.Error(codes.Internal, "invalid certificate validity"), fmt.Errorf("invalid certificate validity [%s]", req.ServiceAccount))
+		}
+
+		certificateAuthorityParameters = &apiv1.CertificateAuthorityParameter{
+			Region:        req.CertificateAuthority.Region,
+			CaArn:         req.CertificateAuthority.CaArn,
+			AssumeRole:    req.CertificateAuthority.AssumeRole,
+			RoleArn:       req.CertificateAuthority.RoleArn,
+			Validity:      int32(req.CertificateAuthority.Validity),
+			SignAlgorithm: req.CertificateAuthority.SignAlgorithm,
+		}
+	}
 	// c.pca Mock Private CA
 	if c.pca == nil {
-		client, err := acm_pca.NewPrivateCaClient(parameters)
+		client, err := acm_pca.NewPrivateCaClient(types.CertificateParameters{
+			AssumeRole: certificateAuthorityParameters.AssumeRole,
+			RoleArn:    certificateAuthorityParameters.RoleArn,
+			Region:     certificateAuthorityParameters.Region,
+		})
 		if err != nil {
 			return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid parameters for acm pca client"), err)
 		}
 		c.pca = client
 	}
 
-	certificate, err := c.pca.IssueCertificateFromTemplate(req.CertificateAuthority, []byte(req.CertificateSigningRequest), types.CertificateRequestExtension[req.ExtendedKey].TemplateArn)
+	certificate, err := c.pca.IssueCertificateFromTemplate(certificateAuthorityParameters, []byte(req.CertificateSigningRequest), types.CertificateRequestExtension[req.ExtendedKey].TemplateArn)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Internal, "error issuing certificate"), err)
 	}
@@ -140,9 +183,9 @@ func (c *Certificate) OperationsSignCSR(ctx context.Context, req *apiv1.Operatio
 		ExtendedKey:             req.ExtendedKey,
 		CommonName:              certificate.Subject.CommonName,
 		SubjectAlternativeName:  certificate.DNSNames,
-		ExpirationDate:          time.Now().UTC().AddDate(0, 0, int(req.CertificateAuthority.Validity)).UTC(),
-		IssuedDate:              time.Now().UTC(),
-		CertificateAuthorityArn: sql.NullString{String: req.CertificateAuthority.CaArn, Valid: len(req.CertificateAuthority.CaArn) != 0},
+		ExpirationDate:          certificate.NotAfter.UTC(),
+		IssuedDate:              certificate.NotBefore.UTC(),
+		CertificateAuthorityArn: sql.NullString{String: certificateAuthorityParameters.CaArn, Valid: len(certificateAuthorityParameters.CaArn) != 0},
 	}
 
 	metadata, err := c.store.Writer.LogCertificate(ctx, arg)

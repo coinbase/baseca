@@ -14,6 +14,8 @@ type Store interface {
 	TxCreateServiceAccount(ctx context.Context, arg CreateServiceAccountParams, iid StoreInstanceIdentityDocumentParams) (*Account, error)
 	TxDeleteServiceAccount(ctx context.Context, client_id uuid.UUID) error
 	TxUpdateServiceAccount(ctx context.Context, arg Account, attestation types.NodeAttestation) (*Account, error)
+	TxCreateProvisionerAccount(ctx context.Context, arg CreateProvisionerAccountParams, iid StoreInstanceIdentityDocumentParams) (*Provisioner, error)
+	TxDeleteProvisionerAccount(ctx context.Context, client_id uuid.UUID) error
 }
 type SQLStore struct {
 	db *sql.DB

@@ -28,6 +28,7 @@ type CertificateClient interface {
 	ListCertificates(ctx context.Context, in *ListCertificatesRequest, opts ...grpc.CallOption) (*CertificatesParameter, error)
 	RevokeCertificate(ctx context.Context, in *RevokeCertificateRequest, opts ...grpc.CallOption) (*RevokeCertificateResponse, error)
 	OperationsSignCSR(ctx context.Context, in *OperationsSignRequest, opts ...grpc.CallOption) (*SignedCertificate, error)
+	QueryCertificateMetadata(ctx context.Context, in *QueryCertificateMetadataRequest, opts ...grpc.CallOption) (*CertificatesParameter, error)
 }
 
 type certificateClient struct {
@@ -83,6 +84,15 @@ func (c *certificateClient) OperationsSignCSR(ctx context.Context, in *Operation
 	return out, nil
 }
 
+func (c *certificateClient) QueryCertificateMetadata(ctx context.Context, in *QueryCertificateMetadataRequest, opts ...grpc.CallOption) (*CertificatesParameter, error) {
+	out := new(CertificatesParameter)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Certificate/QueryCertificateMetadata", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CertificateServer is the server API for Certificate service.
 // All implementations must embed UnimplementedCertificateServer
 // for forward compatibility
@@ -92,6 +102,7 @@ type CertificateServer interface {
 	ListCertificates(context.Context, *ListCertificatesRequest) (*CertificatesParameter, error)
 	RevokeCertificate(context.Context, *RevokeCertificateRequest) (*RevokeCertificateResponse, error)
 	OperationsSignCSR(context.Context, *OperationsSignRequest) (*SignedCertificate, error)
+	QueryCertificateMetadata(context.Context, *QueryCertificateMetadataRequest) (*CertificatesParameter, error)
 	mustEmbedUnimplementedCertificateServer()
 }
 
@@ -113,6 +124,9 @@ func (UnimplementedCertificateServer) RevokeCertificate(context.Context, *Revoke
 }
 func (UnimplementedCertificateServer) OperationsSignCSR(context.Context, *OperationsSignRequest) (*SignedCertificate, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method OperationsSignCSR not implemented")
+}
+func (UnimplementedCertificateServer) QueryCertificateMetadata(context.Context, *QueryCertificateMetadataRequest) (*CertificatesParameter, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method QueryCertificateMetadata not implemented")
 }
 func (UnimplementedCertificateServer) mustEmbedUnimplementedCertificateServer() {}
 
@@ -217,6 +231,24 @@ func _Certificate_OperationsSignCSR_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Certificate_QueryCertificateMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryCertificateMetadataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CertificateServer).QueryCertificateMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/baseca.v1.Certificate/QueryCertificateMetadata",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CertificateServer).QueryCertificateMetadata(ctx, req.(*QueryCertificateMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Certificate_ServiceDesc is the grpc.ServiceDesc for Certificate service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -243,6 +275,10 @@ var Certificate_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "OperationsSignCSR",
 			Handler:    _Certificate_OperationsSignCSR_Handler,
+		},
+		{
+			MethodName: "QueryCertificateMetadata",
+			Handler:    _Certificate_QueryCertificateMetadata_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
@@ -556,11 +592,16 @@ var Account_ServiceDesc = grpc.ServiceDesc{
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type ServiceClient interface {
 	CreateServiceAccount(ctx context.Context, in *CreateServiceAccountRequest, opts ...grpc.CallOption) (*CreateServiceAccountResponse, error)
+	CreateProvisionerAccount(ctx context.Context, in *CreateProvisionerAccountRequest, opts ...grpc.CallOption) (*CreateProvisionerAccountResponse, error)
+	GetProvisionerAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*ProvisionerAccount, error)
+	GetServiceAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*ServiceAccount, error)
+	GetServiceAccountMetadata(ctx context.Context, in *GetServiceAccountMetadataRequest, opts ...grpc.CallOption) (*ServiceAccounts, error)
+	DeleteServiceAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	DeleteProvisionedServiceAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	DeleteProvisionerAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	ProvisionServiceAccount(ctx context.Context, in *ProvisionServiceAccountRequest, opts ...grpc.CallOption) (*ProvisionServiceAccountResponse, error)
 	ListServiceAccounts(ctx context.Context, in *QueryParameter, opts ...grpc.CallOption) (*ServiceAccounts, error)
-	GetServiceAccountUuid(ctx context.Context, in *ServiceAccountId, opts ...grpc.CallOption) (*ServiceAccount, error)
-	GetServiceAccountName(ctx context.Context, in *ServiceAccountName, opts ...grpc.CallOption) (*ServiceAccounts, error)
-	DeleteServiceAccount(ctx context.Context, in *ServiceAccountId, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	ListProvisionerAccounts(ctx context.Context, in *QueryParameter, opts ...grpc.CallOption) (*ProvisionerAccounts, error)
 }
 
 type serviceClient struct {
@@ -574,6 +615,69 @@ func NewServiceClient(cc grpc.ClientConnInterface) ServiceClient {
 func (c *serviceClient) CreateServiceAccount(ctx context.Context, in *CreateServiceAccountRequest, opts ...grpc.CallOption) (*CreateServiceAccountResponse, error) {
 	out := new(CreateServiceAccountResponse)
 	err := c.cc.Invoke(ctx, "/baseca.v1.Service/CreateServiceAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) CreateProvisionerAccount(ctx context.Context, in *CreateProvisionerAccountRequest, opts ...grpc.CallOption) (*CreateProvisionerAccountResponse, error) {
+	out := new(CreateProvisionerAccountResponse)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Service/CreateProvisionerAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) GetProvisionerAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*ProvisionerAccount, error) {
+	out := new(ProvisionerAccount)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Service/GetProvisionerAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) GetServiceAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*ServiceAccount, error) {
+	out := new(ServiceAccount)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Service/GetServiceAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) GetServiceAccountMetadata(ctx context.Context, in *GetServiceAccountMetadataRequest, opts ...grpc.CallOption) (*ServiceAccounts, error) {
+	out := new(ServiceAccounts)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Service/GetServiceAccountMetadata", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) DeleteServiceAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Service/DeleteServiceAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) DeleteProvisionedServiceAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Service/DeleteProvisionedServiceAccount", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceClient) DeleteProvisionerAccount(ctx context.Context, in *AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Service/DeleteProvisionerAccount", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -598,27 +702,9 @@ func (c *serviceClient) ListServiceAccounts(ctx context.Context, in *QueryParame
 	return out, nil
 }
 
-func (c *serviceClient) GetServiceAccountUuid(ctx context.Context, in *ServiceAccountId, opts ...grpc.CallOption) (*ServiceAccount, error) {
-	out := new(ServiceAccount)
-	err := c.cc.Invoke(ctx, "/baseca.v1.Service/GetServiceAccountUuid", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *serviceClient) GetServiceAccountName(ctx context.Context, in *ServiceAccountName, opts ...grpc.CallOption) (*ServiceAccounts, error) {
-	out := new(ServiceAccounts)
-	err := c.cc.Invoke(ctx, "/baseca.v1.Service/GetServiceAccountName", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *serviceClient) DeleteServiceAccount(ctx context.Context, in *ServiceAccountId, opts ...grpc.CallOption) (*emptypb.Empty, error) {
-	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/baseca.v1.Service/DeleteServiceAccount", in, out, opts...)
+func (c *serviceClient) ListProvisionerAccounts(ctx context.Context, in *QueryParameter, opts ...grpc.CallOption) (*ProvisionerAccounts, error) {
+	out := new(ProvisionerAccounts)
+	err := c.cc.Invoke(ctx, "/baseca.v1.Service/ListProvisionerAccounts", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -630,11 +716,16 @@ func (c *serviceClient) DeleteServiceAccount(ctx context.Context, in *ServiceAcc
 // for forward compatibility
 type ServiceServer interface {
 	CreateServiceAccount(context.Context, *CreateServiceAccountRequest) (*CreateServiceAccountResponse, error)
+	CreateProvisionerAccount(context.Context, *CreateProvisionerAccountRequest) (*CreateProvisionerAccountResponse, error)
+	GetProvisionerAccount(context.Context, *AccountId) (*ProvisionerAccount, error)
+	GetServiceAccount(context.Context, *AccountId) (*ServiceAccount, error)
+	GetServiceAccountMetadata(context.Context, *GetServiceAccountMetadataRequest) (*ServiceAccounts, error)
+	DeleteServiceAccount(context.Context, *AccountId) (*emptypb.Empty, error)
+	DeleteProvisionedServiceAccount(context.Context, *AccountId) (*emptypb.Empty, error)
+	DeleteProvisionerAccount(context.Context, *AccountId) (*emptypb.Empty, error)
 	ProvisionServiceAccount(context.Context, *ProvisionServiceAccountRequest) (*ProvisionServiceAccountResponse, error)
 	ListServiceAccounts(context.Context, *QueryParameter) (*ServiceAccounts, error)
-	GetServiceAccountUuid(context.Context, *ServiceAccountId) (*ServiceAccount, error)
-	GetServiceAccountName(context.Context, *ServiceAccountName) (*ServiceAccounts, error)
-	DeleteServiceAccount(context.Context, *ServiceAccountId) (*emptypb.Empty, error)
+	ListProvisionerAccounts(context.Context, *QueryParameter) (*ProvisionerAccounts, error)
 	mustEmbedUnimplementedServiceServer()
 }
 
@@ -645,20 +736,35 @@ type UnimplementedServiceServer struct {
 func (UnimplementedServiceServer) CreateServiceAccount(context.Context, *CreateServiceAccountRequest) (*CreateServiceAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateServiceAccount not implemented")
 }
+func (UnimplementedServiceServer) CreateProvisionerAccount(context.Context, *CreateProvisionerAccountRequest) (*CreateProvisionerAccountResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateProvisionerAccount not implemented")
+}
+func (UnimplementedServiceServer) GetProvisionerAccount(context.Context, *AccountId) (*ProvisionerAccount, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProvisionerAccount not implemented")
+}
+func (UnimplementedServiceServer) GetServiceAccount(context.Context, *AccountId) (*ServiceAccount, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceAccount not implemented")
+}
+func (UnimplementedServiceServer) GetServiceAccountMetadata(context.Context, *GetServiceAccountMetadataRequest) (*ServiceAccounts, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServiceAccountMetadata not implemented")
+}
+func (UnimplementedServiceServer) DeleteServiceAccount(context.Context, *AccountId) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteServiceAccount not implemented")
+}
+func (UnimplementedServiceServer) DeleteProvisionedServiceAccount(context.Context, *AccountId) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteProvisionedServiceAccount not implemented")
+}
+func (UnimplementedServiceServer) DeleteProvisionerAccount(context.Context, *AccountId) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteProvisionerAccount not implemented")
+}
 func (UnimplementedServiceServer) ProvisionServiceAccount(context.Context, *ProvisionServiceAccountRequest) (*ProvisionServiceAccountResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ProvisionServiceAccount not implemented")
 }
 func (UnimplementedServiceServer) ListServiceAccounts(context.Context, *QueryParameter) (*ServiceAccounts, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServiceAccounts not implemented")
 }
-func (UnimplementedServiceServer) GetServiceAccountUuid(context.Context, *ServiceAccountId) (*ServiceAccount, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetServiceAccountUuid not implemented")
-}
-func (UnimplementedServiceServer) GetServiceAccountName(context.Context, *ServiceAccountName) (*ServiceAccounts, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetServiceAccountName not implemented")
-}
-func (UnimplementedServiceServer) DeleteServiceAccount(context.Context, *ServiceAccountId) (*emptypb.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteServiceAccount not implemented")
+func (UnimplementedServiceServer) ListProvisionerAccounts(context.Context, *QueryParameter) (*ProvisionerAccounts, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProvisionerAccounts not implemented")
 }
 func (UnimplementedServiceServer) mustEmbedUnimplementedServiceServer() {}
 
@@ -687,6 +793,132 @@ func _Service_CreateServiceAccount_Handler(srv interface{}, ctx context.Context,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ServiceServer).CreateServiceAccount(ctx, req.(*CreateServiceAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_CreateProvisionerAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateProvisionerAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).CreateProvisionerAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/baseca.v1.Service/CreateProvisionerAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).CreateProvisionerAccount(ctx, req.(*CreateProvisionerAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_GetProvisionerAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).GetProvisionerAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/baseca.v1.Service/GetProvisionerAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).GetProvisionerAccount(ctx, req.(*AccountId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_GetServiceAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).GetServiceAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/baseca.v1.Service/GetServiceAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).GetServiceAccount(ctx, req.(*AccountId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_GetServiceAccountMetadata_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetServiceAccountMetadataRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).GetServiceAccountMetadata(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/baseca.v1.Service/GetServiceAccountMetadata",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).GetServiceAccountMetadata(ctx, req.(*GetServiceAccountMetadataRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_DeleteServiceAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).DeleteServiceAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/baseca.v1.Service/DeleteServiceAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).DeleteServiceAccount(ctx, req.(*AccountId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_DeleteProvisionedServiceAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).DeleteProvisionedServiceAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/baseca.v1.Service/DeleteProvisionedServiceAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).DeleteProvisionedServiceAccount(ctx, req.(*AccountId))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Service_DeleteProvisionerAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AccountId)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceServer).DeleteProvisionerAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/baseca.v1.Service/DeleteProvisionerAccount",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceServer).DeleteProvisionerAccount(ctx, req.(*AccountId))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -727,56 +959,20 @@ func _Service_ListServiceAccounts_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Service_GetServiceAccountUuid_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceAccountId)
+func _Service_ListProvisionerAccounts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryParameter)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ServiceServer).GetServiceAccountUuid(ctx, in)
+		return srv.(ServiceServer).ListProvisionerAccounts(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/baseca.v1.Service/GetServiceAccountUuid",
+		FullMethod: "/baseca.v1.Service/ListProvisionerAccounts",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceServer).GetServiceAccountUuid(ctx, req.(*ServiceAccountId))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Service_GetServiceAccountName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceAccountName)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ServiceServer).GetServiceAccountName(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/baseca.v1.Service/GetServiceAccountName",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceServer).GetServiceAccountName(ctx, req.(*ServiceAccountName))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Service_DeleteServiceAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ServiceAccountId)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ServiceServer).DeleteServiceAccount(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/baseca.v1.Service/DeleteServiceAccount",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ServiceServer).DeleteServiceAccount(ctx, req.(*ServiceAccountId))
+		return srv.(ServiceServer).ListProvisionerAccounts(ctx, req.(*QueryParameter))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -793,6 +989,34 @@ var Service_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Service_CreateServiceAccount_Handler,
 		},
 		{
+			MethodName: "CreateProvisionerAccount",
+			Handler:    _Service_CreateProvisionerAccount_Handler,
+		},
+		{
+			MethodName: "GetProvisionerAccount",
+			Handler:    _Service_GetProvisionerAccount_Handler,
+		},
+		{
+			MethodName: "GetServiceAccount",
+			Handler:    _Service_GetServiceAccount_Handler,
+		},
+		{
+			MethodName: "GetServiceAccountMetadata",
+			Handler:    _Service_GetServiceAccountMetadata_Handler,
+		},
+		{
+			MethodName: "DeleteServiceAccount",
+			Handler:    _Service_DeleteServiceAccount_Handler,
+		},
+		{
+			MethodName: "DeleteProvisionedServiceAccount",
+			Handler:    _Service_DeleteProvisionedServiceAccount_Handler,
+		},
+		{
+			MethodName: "DeleteProvisionerAccount",
+			Handler:    _Service_DeleteProvisionerAccount_Handler,
+		},
+		{
 			MethodName: "ProvisionServiceAccount",
 			Handler:    _Service_ProvisionServiceAccount_Handler,
 		},
@@ -801,16 +1025,8 @@ var Service_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Service_ListServiceAccounts_Handler,
 		},
 		{
-			MethodName: "GetServiceAccountUuid",
-			Handler:    _Service_GetServiceAccountUuid_Handler,
-		},
-		{
-			MethodName: "GetServiceAccountName",
-			Handler:    _Service_GetServiceAccountName_Handler,
-		},
-		{
-			MethodName: "DeleteServiceAccount",
-			Handler:    _Service_DeleteServiceAccount_Handler,
+			MethodName: "ListProvisionerAccounts",
+			Handler:    _Service_ListProvisionerAccounts_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

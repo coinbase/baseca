@@ -24,38 +24,10 @@ func (c *client) IssueCertificate(certificateRequest CertificateRequest) (*apiv1
 	}
 
 	err = parseCertificateFormat(signedCertificate, SignedCertificate{
-		CertificatePath:      certificateRequest.Output.Certificate,
-		CertificateChainPath: certificateRequest.Output.CertificateChain})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return signedCertificate, nil
-}
-
-func (c *client) ProvisionIssueCertificate(certificateRequest CertificateRequest, ca *apiv1.CertificateAuthorityParameter, service, environment, extendedKey string) (*apiv1.SignedCertificate, error) {
-	signingRequest, err := GenerateCSR(certificateRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	req := apiv1.OperationsSignRequest{
-		CertificateSigningRequest: signingRequest.CSR.String(),
-		CertificateAuthority:      ca,
-		ServiceAccount:            service,
-		Environment:               environment,
-		ExtendedKey:               extendedKey,
-	}
-
-	signedCertificate, err := c.Certificate.OperationsSignCSR(context.Background(), &req)
-	if err != nil {
-		return nil, err
-	}
-
-	err = parseCertificateFormat(signedCertificate, SignedCertificate{
-		CertificatePath:      certificateRequest.Output.Certificate,
-		CertificateChainPath: certificateRequest.Output.CertificateChain})
+		CertificatePath:                  certificateRequest.Output.Certificate,
+		IntermediateCertificateChainPath: certificateRequest.Output.IntermediateCertificateChain,
+		RootCertificateChainPath:         certificateRequest.Output.RootCertificateChain,
+	})
 
 	if err != nil {
 		return nil, err
@@ -73,12 +45,24 @@ func parseCertificateFormat(certificate *apiv1.SignedCertificate, parameter Sign
 		}
 	}
 
-	// Certificate Chain Path
-	if len(parameter.CertificateChainPath) != 0 {
+	// Intermediate Certificate Chain Path
+	if len(parameter.IntermediateCertificateChainPath) != 0 {
+		certificate := []byte(certificate.IntermediateCertificateChain)
+		if err := os.WriteFile(parameter.IntermediateCertificateChainPath, certificate, os.ModePerm); err != nil {
+			return fmt.Errorf("error writing certificate to [%s]", parameter.IntermediateCertificateChainPath)
+		}
+	}
+
+	// Root Certificate Chain Path
+	if len(parameter.RootCertificateChainPath) != 0 {
 		certificate := []byte(certificate.CertificateChain)
-		if err := os.WriteFile(parameter.CertificateChainPath, certificate, os.ModePerm); err != nil {
-			return fmt.Errorf("error writing certificate chain to [%s]", parameter.CertificateChainPath)
+		if err := os.WriteFile(parameter.RootCertificateChainPath, certificate, os.ModePerm); err != nil {
+			return fmt.Errorf("error writing certificate chain to [%s]", parameter.RootCertificateChainPath)
 		}
 	}
 	return nil
+}
+
+func (c *client) QueryCertificateMetadata(req *apiv1.QueryCertificateMetadataRequest) (*apiv1.CertificatesParameter, error) {
+	return c.Certificate.QueryCertificateMetadata(context.Background(), req)
 }

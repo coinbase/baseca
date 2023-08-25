@@ -118,9 +118,11 @@ func buildCertificateConfig(store *mock_store.MockStore) (*Certificate, error) {
 		return nil, err
 	}
 
+	validator.SupportedConfig(config)
 	validator.SetBaseDirectory(config)
-	endpoints := db.DatabaseEndpoints{Writer: store, Reader: store}
+	validator.SupportedEnvironments(config)
 
+	endpoints := db.DatabaseEndpoints{Writer: store, Reader: store}
 	redisConfig := &config.Redis
 	mockRedis := &mockedRedisClient{}
 

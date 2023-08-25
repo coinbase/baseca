@@ -21,44 +21,62 @@ const (
 	_rootCertificate         = "/ca-root.crt"
 )
 
-func BuildCertificateChain(intermediateCa string, certificate []byte, caCertificate []byte) (*bytes.Buffer, *bytes.Buffer, error) {
+func BuildCertificateChain(ca_path string, certificate []byte, subordinate_ca []byte) (*bytes.Buffer, *bytes.Buffer, *bytes.Buffer, error) {
 	var err error
 	leaf_certificate := new(bytes.Buffer)
-	chained_certificate := new(bytes.Buffer)
+	intermediate_chained_certificate := new(bytes.Buffer)
+	root_chained_certificate := new(bytes.Buffer)
 
-	intermediate_ca, root_ca, err := getCertificateChain(intermediateCa)
+	intermediate_ca, root_ca, err := retrieveCertificateAuthority(ca_path)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	// Leaf Certificate
+	// End Entity Certificate
 	err = pem.Encode(leaf_certificate, &pem.Block{Type: "CERTIFICATE", Bytes: certificate})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	// Certificate Chain
-	err = pem.Encode(chained_certificate, &pem.Block{Type: "CERTIFICATE", Bytes: certificate})
+	// Build Intermediate Certificate Chain
+	err = pem.Encode(intermediate_chained_certificate, &pem.Block{Type: "CERTIFICATE", Bytes: certificate})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
-	// Build the chain based on the existence of intermediate_ca
-	var chain [][]byte
+	var intermediate_chain [][]byte
 	if intermediate_ca != nil {
-		chain = [][]byte{caCertificate, intermediate_ca, root_ca}
-	} else {
-		chain = [][]byte{caCertificate, root_ca}
+		intermediate_chain = [][]byte{subordinate_ca, intermediate_ca}
 	}
 
-	for _, certificate := range chain {
-		err = pem.Encode(chained_certificate, &pem.Block{Type: "CERTIFICATE", Bytes: certificate})
+	for _, crt := range intermediate_chain {
+		err = pem.Encode(intermediate_chained_certificate, &pem.Block{Type: "CERTIFICATE", Bytes: crt})
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, nil, err
 		}
 	}
 
-	return leaf_certificate, chained_certificate, nil
+	// Build Root Certificate Chains Depending on Existence of Intermediate CA
+	err = pem.Encode(root_chained_certificate, &pem.Block{Type: "CERTIFICATE", Bytes: certificate})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	var root_chain [][]byte
+	if intermediate_ca != nil {
+		root_chain = [][]byte{subordinate_ca, intermediate_ca, root_ca}
+	} else {
+		root_chain = [][]byte{subordinate_ca, root_ca}
+	}
+
+	for _, crt := range root_chain {
+		err = pem.Encode(root_chained_certificate, &pem.Block{Type: "CERTIFICATE", Bytes: crt})
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
+	return leaf_certificate, intermediate_chained_certificate, root_chained_certificate, nil
 }
 
 func GetSubordinateCaPath(service string) (*string, *string, error) {
@@ -77,7 +95,7 @@ func GetSubordinateCaPath(service string) (*string, *string, error) {
 	return &caPath, &keyPath, nil
 }
 
-func getCertificateChain(service string) ([]byte, []byte, error) {
+func retrieveCertificateAuthority(service string) ([]byte, []byte, error) {
 	intermediatePath := filepath.Join(types.SubordinatePath, service+_intermediateCertificate)
 	rootPath := filepath.Join(types.SubordinatePath, service+_rootCertificate)
 

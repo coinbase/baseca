@@ -22,6 +22,7 @@ CREATE TABLE "accounts" (
   "extended_key" varchar(100) NOT NULL,
   "certificate_validity" smallserial NOT NULL,
   "subordinate_ca" varchar(100) NOT NULL,
+  "provisioned" boolean NOT NULL,
   "node_attestation" varchar(100)[],
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "created_by" uuid NOT NULL

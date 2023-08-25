@@ -2,6 +2,8 @@ package baseca
 
 import (
 	"bytes"
+	"crypto/ecdsa"
+	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -18,8 +20,9 @@ type SigningRequest struct {
 }
 
 type SignedCertificate struct {
-	CertificatePath      string
-	CertificateChainPath string
+	CertificatePath                  string
+	IntermediateCertificateChainPath string
+	RootCertificateChainPath         string
 }
 
 func GenerateCSR(csr CertificateRequest) (*SigningRequest, error) {
@@ -89,6 +92,55 @@ func GenerateCSR(csr CertificateRequest) (*SigningRequest, error) {
 			CSR:        certificatePem,
 			PrivateKey: pkBlock,
 		}, nil
+
+	case x509.ECDSAWithSHA256, x509.ECDSAWithSHA384, x509.ECDSAWithSHA512:
+		pk, err := ecdsa.GenerateKey(elliptic.P384(), rand.Reader)
+		if err != nil {
+			return nil, errors.New("error generating ECDSA key pair")
+		}
+
+		csrBytes, err := x509.CreateCertificateRequest(rand.Reader, &template, pk)
+		if err != nil {
+			return nil, err
+		}
+
+		certificatePem := new(bytes.Buffer)
+		err = pem.Encode(certificatePem, &pem.Block{
+			Type:  "CERTIFICATE REQUEST",
+			Bytes: csrBytes,
+		})
+
+		if err != nil {
+			return nil, errors.New("error encoding certificate request (csr)")
+		}
+
+		if len(csr.Output.CertificateSigningRequest) != 0 {
+			if err := os.WriteFile(csr.Output.CertificateSigningRequest, certificatePem.Bytes(), os.ModePerm); err != nil {
+				return nil, fmt.Errorf("error writing certificate signing request (csr) to [%s]", csr.Output.CertificateSigningRequest)
+			}
+		}
+
+		ecPrivateKeyBytes, err := x509.MarshalECPrivateKey(pk)
+		if err != nil {
+			return nil, errors.New("error marshaling ECDSA private key")
+		}
+
+		pkBlock := &pem.Block{
+			Type:  "EC PRIVATE KEY",
+			Bytes: ecPrivateKeyBytes,
+		}
+
+		if len(csr.Output.PrivateKey) != 0 {
+			if err := os.WriteFile(csr.Output.PrivateKey, pem.EncodeToMemory(pkBlock), os.ModePerm); err != nil {
+				return nil, fmt.Errorf("error writing private key to [%s]", csr.Output.PrivateKey)
+			}
+		}
+
+		return &SigningRequest{
+			CSR:        certificatePem,
+			PrivateKey: pkBlock,
+		}, nil
+
 	default:
 		return nil, errors.New("unsupported signing algorithm")
 	}

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"unicode"
 
 	"github.com/coinbase/baseca/internal/config"
 	"github.com/tabbed/pqtype"
@@ -101,4 +102,15 @@ func ConvertNullRawMessageToMap(nrm pqtype.NullRawMessage) (map[string]string, e
 		}
 	}
 	return result, nil
+}
+
+// Validate if input only contain alphanumeric
+func ValidateInput(s string) bool {
+	for _, c := range s {
+		if !unicode.IsLetter(c) && !unicode.IsNumber(c) {
+			return false
+		}
+	}
+
+	return true
 }
