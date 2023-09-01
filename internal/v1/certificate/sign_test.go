@@ -29,8 +29,8 @@ func TestSignCSR(t *testing.T) {
 			name: "OK",
 			req: func() *apiv1.CertificateSigningRequest {
 				req := baseca.CertificateRequest{
-					CommonName:            "example.coinbase.com",
-					SubjectAlternateNames: []string{"example.coinbase.com"},
+					CommonName:            "example.com",
+					SubjectAlternateNames: []string{"example.com"},
 					SigningAlgorithm:      x509.SHA512WithRSA,
 					PublicKeyAlgorithm:    x509.RSA,
 					KeySize:               4096,
@@ -64,7 +64,7 @@ func TestSignCSR(t *testing.T) {
 				ServiceID:                   uuid.New(),
 				ServiceAccount:              "example",
 				Environment:                 "development",
-				ValidSubjectAlternateName:   []string{"example.coinbase.com"},
+				ValidSubjectAlternateName:   []string{"example.com"},
 				ValidCertificateAuthorities: []string{"sandbox_use1"},
 				CertificateValidity:         int16(30),
 				ExtendedKey:                 "EndEntityServerAuthCertificate",

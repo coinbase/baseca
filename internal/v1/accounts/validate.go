@@ -38,7 +38,7 @@ func (s *Service) validateSanInputServiceAccount(ctx context.Context, service_ac
 	}
 
 	for _, fqdn := range request_san {
-		if !validator.IsValidateDomain(fqdn) {
+		if !validator.IsValidDomain(fqdn) {
 			return fmt.Errorf("invalid domain [%s]", fqdn)
 		}
 	}
@@ -97,7 +97,7 @@ func (s *Service) validateSanInputProvisionerAccount(ctx context.Context, provis
 	}
 
 	for _, fqdn := range request_san {
-		if !validator.IsValidateDomain(fqdn) {
+		if !validator.IsValidDomain(fqdn) {
 			return fmt.Errorf("invalid domain [%s]", fqdn)
 		}
 	}

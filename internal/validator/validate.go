@@ -8,7 +8,7 @@ import (
 	"unicode"
 
 	"github.com/coinbase/baseca/internal/config"
-	"github.com/tabbed/pqtype"
+	"github.com/sqlc-dev/pqtype"
 )
 
 type NullString sql.NullString
@@ -27,30 +27,35 @@ func ValidateCertificateAuthorityEnvironment(config config.Environment, environm
 }
 
 func ValidateSubjectAlternateNames(request_san []string, valid_san []string, regular_expression string) error {
-	mapping := make(map[string]bool)
-	for _, elem := range valid_san {
-		mapping[elem] = true
+	// Convert Subject Alternative Name to Regular Expression
+	patterns := make([]*regexp.Regexp, 0, len(valid_san))
+	for _, subject_alternative_name := range valid_san {
+		pattern, err := regexp.Compile(subject_alternative_name)
+		if err != nil {
+			return fmt.Errorf("regular expression compile error: %s", err)
+		}
+		patterns = append(patterns, pattern)
 	}
 
-	// Non-Regex Check
-	if len(regular_expression) == 0 {
-		for _, san := range request_san {
-			if !mapping[san] {
-				return fmt.Errorf("invalid subject alternative name [%s]", san)
+	// Compile Custom Regular Expression if Provided
+	if len(regular_expression) > 0 {
+		compiled, err := regexp.Compile(regular_expression)
+		if err != nil {
+			return fmt.Errorf("regular expression compile error: %s", err)
+		}
+		patterns = append(patterns, compiled)
+	}
+
+	// Check Each Subject Alternative Name Against Regular Expression
+	for _, subject_alternative_name := range request_san {
+		valid_pattern := false
+		for _, pattern := range patterns {
+			if pattern.MatchString(subject_alternative_name) {
+				valid_pattern = true
 			}
 		}
-	} else { // Regex Check
-		for _, san := range request_san {
-			if !mapping[san] {
-				compile, err := regexp.Compile(regular_expression)
-				if err != nil {
-					return fmt.Errorf("regular expression compile error: %s", err)
-				}
-				match := compile.MatchString(san)
-				if !match {
-					return fmt.Errorf("invalid subject alternative name [%s] from regular expression validation", san)
-				}
-			}
+		if !valid_pattern {
+			return fmt.Errorf("invalid subject alternative name [%s]", subject_alternative_name)
 		}
 	}
 	return nil

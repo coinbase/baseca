@@ -127,10 +127,10 @@ func buildCertificateConfig(store *mock_store.MockStore) (*Certificate, error) {
 	mockRedis := &mockedRedisClient{}
 
 	mockRedis.On("HIncrBy", mock.Anything, mock.Anything, mock.Anything, mock.Anything).
-		Return(redis.NewIntCmd(context.Background(), "example.coinbase.com", time.Now().UTC(), int64(10)))
+		Return(redis.NewIntCmd(context.Background(), "example.com", time.Now().UTC(), int64(10)))
 
 	mockRedis.On("HGetAll", mock.Anything, mock.Anything).
-		Return(redis.NewStringStringMapCmd(context.Background(), map[string]string{"example.coinbase.com": time.Now().UTC().String()}))
+		Return(redis.NewStringStringMapCmd(context.Background(), map[string]string{"example.com": time.Now().UTC().String()}))
 
 	mockRedis.On("Expire")
 	mockRedis.On("HDel")
