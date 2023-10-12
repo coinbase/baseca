@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/tabbed/pqtype"
+	"github.com/sqlc-dev/pqtype"
 )
 
 type Account struct {

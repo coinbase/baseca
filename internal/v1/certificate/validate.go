@@ -101,7 +101,7 @@ func (c *Certificate) validateCsrParameters(parameters *apiv1.OperationsSignRequ
 
 	dns := request.DNSNames
 	for _, domain := range dns {
-		if !validator.IsValidateDomain(domain) {
+		if !validator.IsValidDomain(domain) {
 			return fmt.Errorf("%s is not a supported domain", domain)
 		}
 	}

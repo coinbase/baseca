@@ -17,11 +17,11 @@ func Test_ValidateSubjectAlternateNames_Regex_Error(t *testing.T) {
 		{
 			RegularExpression: `^[a-zA-Z]+((!coinbase.com)\w)*$`,
 			ValidSAN:          []string{},
-			RequestSAN:        []string{"example.coinbase.com"},
+			RequestSAN:        []string{"example.com"},
 		},
 		{
 			RegularExpression: `^[a-zA-Z]+((!coinbase.com)\w)*$`,
-			ValidSAN:          []string{""},
+			ValidSAN:          []string{"*.coinbase.com"},
 			RequestSAN:        []string{"12345"},
 		},
 	}

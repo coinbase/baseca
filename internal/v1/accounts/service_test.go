@@ -135,6 +135,63 @@ func TestCreateServiceAccount(t *testing.T) {
 				require.NoError(t, err)
 			},
 		},
+		{
+			name: "OK_WILDCARD",
+			req: &apiv1.CreateServiceAccountRequest{
+				ServiceAccount:          "example",
+				Environment:             "sandbox",
+				SubjectAlternativeNames: []string{"*.example.com"},
+				ExtendedKey:             "EndEntityServerAuthCertificate",
+				CertificateAuthorities:  []string{"sandbox_use1"},
+				SubordinateCa:           "infrastructure",
+				CertificateValidity:     30,
+				Team:                    "Infrastructure Security",
+				Email:                   "security@coinbase.com",
+			},
+			build: func(store *mock.MockStore) {
+				account_arg := db.CreateServiceAccountParams{
+					ServiceAccount:              "example",
+					Environment:                 "sandbox",
+					ValidSubjectAlternateName:   []string{"*.example.com"},
+					ExtendedKey:                 "EndEntityServerAuthCertificate",
+					CertificateValidity:         30,
+					ValidCertificateAuthorities: []string{"sandbox_use1"},
+					SubordinateCa:               "infrastructure",
+					Team:                        "Infrastructure Security",
+					Email:                       "security@coinbase.com",
+					CreatedBy:                   authClaim.Subject,
+					NodeAttestation:             []string{},
+				}
+				store.EXPECT().ListServiceAccounts(gomock.Any(), gomock.Any()).Times(1).Return([]*db.Account{}, nil)
+				store.EXPECT().CreateServiceAccount(
+					gomock.Any(),
+					EqCreateServiceAccountParams(account_arg, "account arg matcher"),
+				).Times(1).Return(&db.Account{}, nil)
+			},
+			ctx: context.WithValue(context.Background(), types.AuthorizationPayloadKey, authClaim),
+			check: func(t *testing.T, res *apiv1.CreateServiceAccountResponse, err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "ERROR_INVALID_SUBJECT_ALTERNATIVE_NAME",
+			req: &apiv1.CreateServiceAccountRequest{
+				ServiceAccount:          "example",
+				Environment:             "sandbox",
+				SubjectAlternativeNames: []string{"000.example.com"},
+				ExtendedKey:             "EndEntityServerAuthCertificate",
+				CertificateAuthorities:  []string{"sandbox_use1"},
+				SubordinateCa:           "infrastructure",
+				CertificateValidity:     30,
+				Team:                    "Infrastructure Security",
+				Email:                   "security@coinbase.com",
+			},
+			build: func(store *mock.MockStore) {},
+			ctx:   context.WithValue(context.Background(), types.AuthorizationPayloadKey, authClaim),
+			check: func(t *testing.T, res *apiv1.CreateServiceAccountResponse, err error) {
+				require.Error(t, err)
+			},
+		},
 	}
 
 	ctrl := gomock.NewController(t)

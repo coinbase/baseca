@@ -78,7 +78,7 @@ func StartRPC(lc fx.Lifecycle, cfg *config.Config) error {
 
 	extractor := func(resp interface{}, err error, code codes.Code) string {
 		if err != nil {
-			if customErr, ok := err.(*logger.Error); ok {
+			if customErr, ok := err.(*logger.Error); ok && customErr.InternalError != nil {
 				return customErr.InternalError.Error()
 			}
 			return err.Error()
