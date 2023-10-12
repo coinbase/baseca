@@ -81,3 +81,70 @@ func TestDeleteServiceAccount(t *testing.T) {
 		})
 	}
 }
+
+func TestDeleteProvisionerAccount(t *testing.T) {
+	provisioner_account_id := "030984ac-e8b3-4f6e-83b2-03ecc81c0477"
+	client_id, _ := uuid.Parse(provisioner_account_id)
+
+	cases := []struct {
+		name  string
+		req   *apiv1.AccountId
+		build func(store *mock.MockStore)
+		check func(t *testing.T, res *emptypb.Empty, err error)
+	}{
+		{
+			name: "OK",
+			req: &apiv1.AccountId{
+				Uuid: provisioner_account_id,
+			},
+			build: func(store *mock.MockStore) {
+				store.EXPECT().TxDeleteProvisionerAccount(gomock.Any(), client_id).Times(1).Return(nil)
+			},
+			check: func(t *testing.T, res *emptypb.Empty, err error) {
+				require.NoError(t, err)
+			},
+		},
+		{
+			name: "INVALID_UUID",
+			req: &apiv1.AccountId{
+				Uuid: "random_string",
+			},
+			build: func(store *mock.MockStore) {},
+			check: func(t *testing.T, res *emptypb.Empty, err error) {
+				require.Error(t, err)
+				require.EqualError(t, err, "rpc error: code = InvalidArgument desc = invalid uuid parameter")
+			},
+		},
+		{
+			name: "DB_ERROR",
+			req: &apiv1.AccountId{
+				Uuid: provisioner_account_id,
+			},
+			build: func(store *mock.MockStore) {
+				store.EXPECT().TxDeleteProvisionerAccount(gomock.Any(), client_id).Times(1).Return(fmt.Errorf("internal server error"))
+			},
+			check: func(t *testing.T, res *emptypb.Empty, err error) {
+				require.Error(t, err)
+				require.EqualError(t, err, "rpc error: code = Internal desc = internal server error")
+			},
+		},
+	}
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	store := mock.NewMockStore(ctrl)
+
+	for elem := range cases {
+		tc := cases[elem]
+
+		t.Run(tc.name, func(t *testing.T) {
+			tc.build(store)
+
+			c, err := buildAccountsConfig(store)
+			require.NoError(t, err)
+
+			res, err := c.DeleteProvisionerAccount(context.Background(), tc.req)
+			tc.check(t, res, err)
+		})
+	}
+}

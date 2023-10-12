@@ -2,15 +2,20 @@ package validator
 
 import (
 	"net"
+	"regexp"
 	"strings"
 
 	"github.com/coinbase/baseca/internal/config"
 )
 
+const (
+	_dns_regular_expression = `^[a-zA-Z*.]+$`
+)
+
 var valid_domains []string
 var valid_certificate_authorities []string
 
-func IsValidateDomain(fully_qualified_domain_name string) bool {
+func IsValidDomain(fully_qualified_domain_name string) bool {
 
 	arr := strings.Split(fully_qualified_domain_name, ".")
 
@@ -20,10 +25,14 @@ func IsValidateDomain(fully_qualified_domain_name string) bool {
 
 	domain_slice := arr[len(arr)-2:]
 	domain := strings.Join(domain_slice, ".")
+	pattern, _ := regexp.Compile(_dns_regular_expression)
 
 	for _, valid_domain := range valid_domains {
 		if domain == valid_domain {
-			return true
+			// DNS Wildcard Check
+			if pattern.MatchString(fully_qualified_domain_name) {
+				return true
+			}
 		}
 	}
 

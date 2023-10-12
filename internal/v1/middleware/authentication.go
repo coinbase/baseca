@@ -140,7 +140,7 @@ func (m *Middleware) AuthenticateServiceAccount(ctx context.Context) (*authentic
 			// Compare Signed Node Data with Attestation Table in Database
 			attestation_err := aws_iid.AWSIidNodeAttestation(client_uuid, clientIdentityDocumentHeader[0], cachedServiceAccount.AwsIid, m.cache)
 			if attestation_err != nil {
-				return nil, logger.RpcError(status.Error(codes.Unauthenticated, "aws_iid attestation error"), err)
+				return nil, logger.RpcError(status.Error(codes.Unauthenticated, "aws_iid attestation error"), attestation_err)
 			}
 		}
 	}
@@ -202,7 +202,7 @@ func (m *Middleware) AuthenticateProvisionerAccount(ctx context.Context) (*authe
 			// Compare Signed Node Data with Attestation Table in Database
 			attestation_err := aws_iid.AWSIidNodeAttestation(client_uuid, clientIdentityDocumentHeader[0], cachedProvisionerAccount.AwsIid, m.cache)
 			if attestation_err != nil {
-				return nil, logger.RpcError(status.Error(codes.Unauthenticated, "aws_iid attestation error"), err)
+				return nil, logger.RpcError(status.Error(codes.Unauthenticated, "aws_iid attestation error"), attestation_err)
 			}
 		}
 	}
