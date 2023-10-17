@@ -1,9 +1,10 @@
-package authentication
+package lib
 
 import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -220,11 +221,11 @@ func (s *signer) Verify(ctx context.Context, jwt string) (*Claims, error) {
 
 func (c *Claims) Valid() error {
 	if time.Now().UTC().After(c.ExpiresAt) {
-		return ErrExpiredToken
+		return errors.New("token has expired")
 	}
 
 	if time.Now().UTC().Before(c.NotBefore) {
-		return ErrInvalidToken
+		return errors.New("token is invalid")
 	}
 	return nil
 }

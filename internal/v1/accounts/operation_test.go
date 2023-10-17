@@ -7,9 +7,9 @@ import (
 
 	"github.com/coinbase/baseca/db/mock"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 

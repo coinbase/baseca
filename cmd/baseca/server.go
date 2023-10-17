@@ -6,9 +6,8 @@ import (
 	"time"
 
 	"github.com/coinbase/baseca/internal/config"
-	"github.com/coinbase/baseca/internal/environment"
-	"github.com/coinbase/baseca/internal/gateway/grpc"
-	"github.com/coinbase/baseca/internal/validator"
+	"github.com/coinbase/baseca/internal/gateway"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	_ "github.com/lib/pq"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
@@ -19,8 +18,7 @@ func main() {
 	app := fx.New(
 		fx.Options(
 			config.Module,
-			environment.Module,
-			grpc.Module,
+			gateway.Module,
 			validator.Module,
 		),
 		fx.WithLogger(

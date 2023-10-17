@@ -10,15 +10,17 @@ import (
 )
 
 func OperationsSignCSR() {
-	client_id := "[CLIENT_ID]"
-	client_token := "[CLIENT_TOKEN]"
-
 	configuration := baseca.Configuration{
 		URL:         "localhost:9090",
 		Environment: baseca.Env.Local,
 	}
 
-	client, err := baseca.LoadDefaultConfiguration(configuration, client_id, client_token, baseca.Attestation.Local)
+	authentication := baseca.Authentication{
+		ClientId:    "CLIENT_ID",
+		ClientToken: "CLIENT_TOKEN",
+	}
+
+	client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -37,6 +39,10 @@ func OperationsSignCSR() {
 		SigningAlgorithm:      x509.SHA384WithRSA,
 		PublicKeyAlgorithm:    x509.RSA,
 		KeySize:               4096,
+		DistinguishedName: baseca.DistinguishedName{
+			Organization: []string{"Coinbase"},
+			// Additional Fields
+		},
 		Output: baseca.Output{
 			PrivateKey:                   "/tmp/sandbox.key",
 			CertificateSigningRequest:    "/tmp/sandbox.csr",

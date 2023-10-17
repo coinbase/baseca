@@ -2,9 +2,8 @@ package certificate
 
 import (
 	"context"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -19,7 +18,7 @@ import (
 	acm_pca "github.com/coinbase/baseca/internal/client/acmpca"
 	"github.com/coinbase/baseca/internal/client/firehose"
 	redis_client "github.com/coinbase/baseca/internal/client/redis"
-	"github.com/coinbase/baseca/internal/validator"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/test"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/mock"
@@ -28,7 +27,7 @@ import (
 var csr *acmpca.IssueCertificateInput
 var rootCrt string
 
-var pk *ecdsa.PrivateKey
+var pk *rsa.PrivateKey
 var root []byte
 var template *x509.Certificate
 
@@ -84,8 +83,8 @@ func (m *mockedPrivateCaClient) GetCertificate(ctx context.Context, params *acmp
 	certTemplate := x509.Certificate{
 		SerialNumber: big.NewInt(2),
 		Subject:      req.Subject,
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(60 * 24 * time.Hour),
+		NotBefore:    time.Now().UTC(),
+		NotAfter:     time.Now().UTC().Add(60 * 24 * time.Hour),
 		KeyUsage:     x509.KeyUsageDigitalSignature | x509.KeyUsageKeyEncipherment,
 	}
 
@@ -188,8 +187,8 @@ func buildCertificateConfig(store *mock_store.MockStore) (*Certificate, error) {
 	}, nil
 }
 
-func mockRootCertificateAuthority() (*ecdsa.PrivateKey, *x509.Certificate, []byte) {
-	rootKey, _ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+func mockRootCertificateAuthority() (*rsa.PrivateKey, *x509.Certificate, []byte) {
+	rootKey, _ := rsa.GenerateKey(rand.Reader, 2048)
 	rootTemplate := x509.Certificate{
 		SerialNumber: big.NewInt(1),
 		Subject: pkix.Name{

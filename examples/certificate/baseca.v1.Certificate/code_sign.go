@@ -6,18 +6,21 @@ import (
 	"os"
 
 	baseca "github.com/coinbase/baseca/pkg/client"
+	"github.com/coinbase/baseca/pkg/types"
 )
 
 func CodeSign() {
-	client_id := "[CLIENT_ID]"
-	client_token := "[CLIENT_TOKEN]"
-
 	configuration := baseca.Configuration{
 		URL:         "localhost:9090",
 		Environment: baseca.Env.Local,
 	}
 
-	client, err := baseca.LoadDefaultConfiguration(configuration, client_id, client_token, baseca.Attestation.Local)
+	authentication := baseca.Authentication{
+		ClientId:    "CLIENT_ID",
+		ClientToken: "CLIENT_TOKEN",
+	}
+
+	client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -25,9 +28,13 @@ func CodeSign() {
 	metadata := baseca.CertificateRequest{
 		CommonName:            "sandbox.coinbase.com",
 		SubjectAlternateNames: []string{"sandbox.coinbase.com"},
-		SigningAlgorithm:      x509.SHA384WithRSA,
-		PublicKeyAlgorithm:    x509.RSA,
-		KeySize:               4096,
+		SigningAlgorithm:      x509.ECDSAWithSHA384,
+		PublicKeyAlgorithm:    x509.ECDSA,
+		KeySize:               256,
+		DistinguishedName: baseca.DistinguishedName{
+			Organization: []string{"Coinbase"},
+			// Additional Fields
+		},
 		Output: baseca.Output{
 			PrivateKey:                   "/tmp/private.key",
 			Certificate:                  "/tmp/certificate.crt",
@@ -44,7 +51,19 @@ func CodeSign() {
 	}
 
 	// Validation Happens on Different Server
-	err = client.ValidateSignature(chain, *signature, data, "sandbox.coinbase.com", "/path/to/system/root")
+	manifest := types.Manifest{
+		CertificateChain: chain,
+		Signature:        *signature,
+		Data:             data,
+		SigningAlgorithm: x509.SHA256WithRSA,
+	}
+
+	tc := types.TrustChain{
+		CommonName:                "sandbox.coinbase.com",
+		CertificateAuthorityFiles: []string{"/path/to/intermediate.pem"},
+	}
+
+	err = client.ValidateSignature(tc, manifest)
 	if err != nil {
 		panic(err)
 	}

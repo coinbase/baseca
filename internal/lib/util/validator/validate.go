@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"testing"
 	"unicode"
 
 	"github.com/coinbase/baseca/internal/config"
@@ -13,7 +14,7 @@ import (
 
 type NullString sql.NullString
 
-func ValidateCertificateAuthorityEnvironment(config config.Environment, environment string, certificate_authorities []string) bool {
+func ValidateCertificateAuthorityEnvironment(config config.Stage, environment string, certificate_authorities []string) bool {
 	if len(certificate_authorities) == 0 {
 		return false
 	}
@@ -94,7 +95,7 @@ func ConvertNullRawMessageToMap(nrm pqtype.NullRawMessage) (map[string]string, e
 		return nil, nil
 	}
 
-	var m map[string]interface{}
+	var m map[string]any
 	err := json.Unmarshal(nrm.RawMessage, &m)
 	if err != nil {
 		return nil, err
@@ -118,4 +119,49 @@ func ValidateInput(s string) bool {
 	}
 
 	return true
+}
+
+func Contains(s []string, str string) bool {
+	for _, v := range s {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
+func SanitizeInput(input []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range input {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}
+
+func TestValidateInput(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		{"HelloWorld", true},    // Only Letters
+		{"123456", true},        // Only Numbers
+		{"Hello123", true},      // Mix of Letters and Numbers
+		{"Hello World!", false}, // Contains a Space and Exclamation Mark
+		{"", true},              // Empty String
+		{"Hello@World", false},  // Contains Special Character
+		{"123#456", false},      // Contains Special Character
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := ValidateInput(tt.input)
+			if result != tt.expected {
+				t.Errorf("got %v, want %v", result, tt.expected)
+			}
+		})
+	}
 }

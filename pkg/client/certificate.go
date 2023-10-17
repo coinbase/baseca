@@ -6,6 +6,7 @@ import (
 	"os"
 
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
+	"github.com/coinbase/baseca/pkg/types"
 )
 
 func (c *client) IssueCertificate(certificateRequest CertificateRequest) (*apiv1.SignedCertificate, error) {
@@ -23,7 +24,7 @@ func (c *client) IssueCertificate(certificateRequest CertificateRequest) (*apiv1
 		return nil, err
 	}
 
-	err = parseCertificateFormat(signedCertificate, SignedCertificate{
+	err = parseCertificateFormat(signedCertificate, types.SignedCertificate{
 		CertificatePath:                  certificateRequest.Output.Certificate,
 		IntermediateCertificateChainPath: certificateRequest.Output.IntermediateCertificateChain,
 		RootCertificateChainPath:         certificateRequest.Output.RootCertificateChain,
@@ -36,7 +37,7 @@ func (c *client) IssueCertificate(certificateRequest CertificateRequest) (*apiv1
 	return signedCertificate, nil
 }
 
-func parseCertificateFormat(certificate *apiv1.SignedCertificate, parameter SignedCertificate) error {
+func parseCertificateFormat(certificate *apiv1.SignedCertificate, parameter types.SignedCertificate) error {
 	// Leaf Certificate Path
 	if len(parameter.CertificatePath) != 0 {
 		certificate := []byte(certificate.Certificate)

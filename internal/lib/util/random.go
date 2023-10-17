@@ -9,14 +9,14 @@ import (
 	"time"
 
 	db "github.com/coinbase/baseca/db/sqlc"
-	"github.com/coinbase/baseca/internal/authentication"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
 	"github.com/google/uuid"
 )
 
 func GenerateTestUser(t *testing.T, permissions string, length int) (db.User, string) {
 	client_id, _ := uuid.NewRandom()
 	credentials := generateRandomCredentials(length)
-	hashed_credentials, _ := authentication.HashPassword(credentials)
+	hashed_credentials, _ := lib.HashPassword(credentials)
 	email := generateRandomEmail()
 	username := generateRandomUsername()
 	full_name := generateRandomName()

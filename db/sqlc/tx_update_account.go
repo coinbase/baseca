@@ -4,8 +4,8 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/coinbase/baseca/internal/validator"
 )
 
 func (store *SQLStore) TxUpdateServiceAccount(ctx context.Context, arg Account, attestation types.NodeAttestation) (*Account, error) {

@@ -10,11 +10,11 @@ import (
 	pca_types "github.com/aws/aws-sdk-go-v2/service/acmpca/types"
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/authentication"
-	acm_pca "github.com/coinbase/baseca/internal/client/acmpca"
+	"github.com/coinbase/baseca/internal/client/acmpca"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/coinbase/baseca/internal/validator"
 	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -40,10 +40,10 @@ func (c *Certificate) RevokeCertificate(ctx context.Context, req *apiv1.RevokeCe
 	var parameters types.CertificateParameters
 	var processed *pca_types.RequestAlreadyProcessedException
 
-	if _, ok := ctx.Value(types.AuthorizationPayloadKey).(*authentication.Claims); !ok {
+	if _, ok := ctx.Value(types.UserAuthenticationContextKey).(*lib.Claims); !ok {
 		return nil, status.Error(codes.InvalidArgument, "authentication error")
 	}
-	uuid := ctx.Value(types.AuthorizationPayloadKey).(*authentication.Claims).Subject
+	uuid := ctx.Value(types.UserAuthenticationContextKey).(*lib.Claims).Subject
 
 	certificate, err := c.store.Reader.GetCertificate(ctx, req.SerialNumber)
 	if err != nil {
@@ -64,7 +64,7 @@ func (c *Certificate) RevokeCertificate(ctx context.Context, req *apiv1.RevokeCe
 
 	// c.pca Mock Private CA
 	if c.pca == nil {
-		client, err := acm_pca.NewPrivateCaClient(parameters)
+		client, err := acmpca.NewPrivateCaClient(parameters)
 		if err != nil {
 			return nil, logger.RpcError(status.Error(codes.Internal, "acm pca client error"), err)
 		}
@@ -121,7 +121,7 @@ func (c *Certificate) OperationsSignCSR(ctx context.Context, req *apiv1.Operatio
 
 		serviceAccount, err := c.store.Reader.GetServiceAccountByMetadata(ctx, arg)
 		if err != nil {
-			logger.RpcError(status.Error(codes.Internal, "error issuing certificate [OperationsSignCSR]"), fmt.Errorf("error querying service account metadata [%s]: %s", req.ServiceAccount, err))
+			return nil, logger.RpcError(status.Error(codes.Internal, "error issuing certificate [OperationsSignCSR]"), fmt.Errorf("error querying service account metadata [%s]: %s", req.ServiceAccount, err))
 		}
 
 		if len(serviceAccount) != 1 {
@@ -141,7 +141,7 @@ func (c *Certificate) OperationsSignCSR(ctx context.Context, req *apiv1.Operatio
 	} else {
 		expirationDate := time.Now().UTC().AddDate(0, 0, int(req.CertificateAuthority.Validity)).UTC()
 		if expirationDate.Before(time.Now().UTC().Add(time.Minute).UTC()) {
-			logger.RpcError(status.Error(codes.Internal, "invalid certificate validity"), fmt.Errorf("invalid certificate validity [%s]", req.ServiceAccount))
+			return nil, logger.RpcError(status.Error(codes.Internal, "invalid certificate validity"), fmt.Errorf("invalid certificate validity [%s]", req.ServiceAccount))
 		}
 
 		certificateAuthorityParameters = &apiv1.CertificateAuthorityParameter{
@@ -155,7 +155,7 @@ func (c *Certificate) OperationsSignCSR(ctx context.Context, req *apiv1.Operatio
 	}
 	// c.pca Mock Private CA
 	if c.pca == nil {
-		client, err := acm_pca.NewPrivateCaClient(types.CertificateParameters{
+		client, err := acmpca.NewPrivateCaClient(types.CertificateParameters{
 			AssumeRole: certificateAuthorityParameters.AssumeRole,
 			RoleArn:    certificateAuthorityParameters.RoleArn,
 			Region:     certificateAuthorityParameters.Region,

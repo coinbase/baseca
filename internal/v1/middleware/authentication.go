@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	db "github.com/coinbase/baseca/db/sqlc"
-	"github.com/coinbase/baseca/internal/attestor/aws_iid"
-	"github.com/coinbase/baseca/internal/authentication"
+	"github.com/coinbase/baseca/internal/attestation/aws_iid"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/coinbase/baseca/internal/validator"
 	"github.com/gogo/status"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -25,7 +25,7 @@ const (
 	_provisioner_auth = "provisioner_authentication"
 )
 
-func (m *Middleware) ServerAuthenticationInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (m *Middleware) ServerAuthenticationInterceptor(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	var auth string
 	var ok bool
 
@@ -78,7 +78,7 @@ func (m *Middleware) ServerAuthenticationInterceptor(ctx context.Context, req in
 			if !ok {
 				return nil, logger.RpcError(status.Error(codes.Unauthenticated, "authentication failed"), fmt.Errorf("invalid permission error %s", userPermission))
 			}
-			ctx = context.WithValue(ctx, types.AuthorizationPayloadKey, payload)
+			ctx = context.WithValue(ctx, types.UserAuthenticationContextKey, payload)
 		}
 	} else if auth == _service_auth {
 		service, err := m.AuthenticateServiceAccount(ctx)
@@ -86,19 +86,19 @@ func (m *Middleware) ServerAuthenticationInterceptor(ctx context.Context, req in
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, types.ClientAuthorizationPayload, service)
+		ctx = context.WithValue(ctx, types.ServiceAuthenticationContextKey, service)
 	} else if auth == _provisioner_auth {
 		service, err := m.AuthenticateProvisionerAccount(ctx)
 		if err != nil {
 			return nil, err
 		}
 
-		ctx = context.WithValue(ctx, types.ClientAuthorizationPayload, service)
+		ctx = context.WithValue(ctx, types.ProvisionerAuthenticationContextKey, service)
 	}
 	return handler(ctx, req)
 }
 
-func (m *Middleware) AuthenticateServiceAccount(ctx context.Context) (*authentication.ServicePayload, error) {
+func (m *Middleware) AuthenticateServiceAccount(ctx context.Context) (*types.ServiceAccountPayload, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "failed to retrieve metadata from context")
@@ -125,7 +125,7 @@ func (m *Middleware) AuthenticateServiceAccount(ctx context.Context) (*authentic
 	}
 
 	account := cachedServiceAccount.ServiceAccount
-	if err := authentication.CheckPassword(clientTokenAuthorizationHeader[0], account.ApiToken); err != nil {
+	if err := lib.CheckPassword(clientTokenAuthorizationHeader[0], account.ApiToken); err != nil {
 		return nil, logger.RpcError(status.Error(codes.Unauthenticated, "authentication error"), err)
 	}
 
@@ -145,7 +145,7 @@ func (m *Middleware) AuthenticateServiceAccount(ctx context.Context) (*authentic
 		}
 	}
 
-	service := &authentication.ServicePayload{
+	service := &types.ServiceAccountPayload{
 		ServiceID:                   account.ClientID,
 		ServiceAccount:              account.ServiceAccount,
 		Environment:                 account.Environment,
@@ -160,7 +160,7 @@ func (m *Middleware) AuthenticateServiceAccount(ctx context.Context) (*authentic
 	return service, nil
 }
 
-func (m *Middleware) AuthenticateProvisionerAccount(ctx context.Context) (*authentication.ProvisionerAccountPayload, error) {
+func (m *Middleware) AuthenticateProvisionerAccount(ctx context.Context) (*types.ProvisionerAccountPayload, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, status.Errorf(codes.Internal, "failed to retrieve metadata from context")
@@ -187,7 +187,7 @@ func (m *Middleware) AuthenticateProvisionerAccount(ctx context.Context) (*authe
 	}
 
 	account := cachedProvisionerAccount.ProvisionerAccount
-	if err := authentication.CheckPassword(clientTokenAuthorizationHeader[0], account.ApiToken); err != nil {
+	if err := lib.CheckPassword(clientTokenAuthorizationHeader[0], account.ApiToken); err != nil {
 		return nil, logger.RpcError(status.Error(codes.Unauthenticated, "authentication error"), err)
 	}
 
@@ -207,7 +207,7 @@ func (m *Middleware) AuthenticateProvisionerAccount(ctx context.Context) (*authe
 		}
 	}
 
-	service := &authentication.ProvisionerAccountPayload{
+	service := &types.ProvisionerAccountPayload{
 		ClientId:                   account.ClientID,
 		ProvisionerAccount:         account.ProvisionerAccount,
 		Environments:               account.Environments,

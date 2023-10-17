@@ -2,6 +2,7 @@ package types
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"crypto/x509"
 	"encoding/pem"
 	"time"
@@ -27,14 +28,26 @@ type Extensions struct {
 }
 
 type Algorithm struct {
-	Algorithm x509.PublicKeyAlgorithm
-	KeySize   map[int]bool
-	Signature map[string]bool
+	Algorithm        x509.PublicKeyAlgorithm
+	KeySize          map[int]any
+	Signature        map[string]bool
+	SigningAlgorithm map[x509.SignatureAlgorithm]bool
 }
 
 type SignatureAlgorithm struct {
 	Common x509.SignatureAlgorithm
 	PCA    types.SigningAlgorithm
+}
+
+type SigningRequest struct {
+	CSR        *bytes.Buffer
+	PrivateKey *pem.Block
+}
+
+type SignedCertificate struct {
+	CertificatePath                  string
+	IntermediateCertificateChainPath string
+	RootCertificateChainPath         string
 }
 
 type CertificateMetadata struct {
@@ -48,7 +61,6 @@ type CertificateMetadata struct {
 	Revoked                 bool
 	RevokedBy               string
 	RevokeDate              time.Time
-	Timestamp               time.Time
 }
 
 type CertificateRequest struct {
@@ -88,13 +100,8 @@ type CertificateAuthority struct {
 	CertificateAuthorityArn string
 }
 
-type SigningRequest struct {
-	CSR        *bytes.Buffer
-	PrivateKey *pem.Block
-}
-
 type AsymmetricKey interface {
-	KeyPair() interface{}
+	KeyPair() any
 	Sign(data []byte) ([]byte, error)
 }
 
@@ -126,10 +133,10 @@ var ValidSignatures = map[string]SignatureAlgorithm{
 	// TODO: Support Probabilistic Element to the Signature Scheme [SHA256WithRSAPSS]
 }
 
-var ValidAlgorithms = map[string]Algorithm{
+var PublicKeyAlgorithms = map[string]Algorithm{
 	"RSA": {
 		Algorithm: x509.RSA,
-		KeySize: map[int]bool{
+		KeySize: map[int]any{
 			2048: true,
 			4096: true,
 		},
@@ -138,18 +145,35 @@ var ValidAlgorithms = map[string]Algorithm{
 			"SHA384WITHRSA": true,
 			"SHA512WITHRSA": true,
 		},
+		SigningAlgorithm: map[x509.SignatureAlgorithm]bool{
+			x509.SHA256WithRSA: true,
+			x509.SHA384WithRSA: true,
+			x509.SHA512WithRSA: true,
+		},
 	},
 	"ECDSA": {
 		Algorithm: x509.ECDSA,
-		KeySize: map[int]bool{
-			256: true,
-			384: true,
-			521: true,
+		KeySize: map[int]any{
+			256: elliptic.P256(),
+			384: elliptic.P384(),
+			521: elliptic.P521(),
 		},
 		Signature: map[string]bool{
 			"SHA256WITHECDSA": true,
 			"SHA384WITHECDSA": true,
 			"SHA512WITHECDSA": true,
+		},
+		SigningAlgorithm: map[x509.SignatureAlgorithm]bool{
+			x509.ECDSAWithSHA256: true,
+			x509.ECDSAWithSHA384: true,
+			x509.ECDSAWithSHA512: true,
+		},
+	},
+	// TODO: Support Ed25519
+	"Ed25519": {
+		Algorithm: x509.Ed25519,
+		KeySize: map[int]any{
+			256: true,
 		},
 	},
 }

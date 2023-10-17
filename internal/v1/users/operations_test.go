@@ -10,10 +10,10 @@ import (
 	"github.com/coinbase/baseca/db/mock"
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/authentication"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
 	"github.com/coinbase/baseca/internal/lib/util"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 const (
@@ -122,13 +122,13 @@ type eqCreateUserParamsMatcher struct {
 	password string
 }
 
-func (e eqCreateUserParamsMatcher) Matches(x interface{}) bool {
+func (e eqCreateUserParamsMatcher) Matches(x any) bool {
 	arg, ok := x.(db.CreateUserParams)
 	if !ok {
 		return false
 	}
 
-	err := authentication.CheckPassword(e.password, arg.HashedCredential)
+	err := lib.CheckPassword(e.password, arg.HashedCredential)
 	if err != nil {
 		return false
 	}

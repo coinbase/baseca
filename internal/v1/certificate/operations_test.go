@@ -12,8 +12,8 @@ import (
 	db "github.com/coinbase/baseca/db/sqlc"
 	"github.com/coinbase/baseca/internal/lib/crypto"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 )
@@ -39,8 +39,8 @@ func TestGetCertificate(t *testing.T) {
 					Environment:             "development",
 					ExtendedKey:             "EndEntityServerAuthCertificate",
 					SubjectAlternativeName:  []string{"development.example.com"},
-					ExpirationDate:          time.Now(),
-					IssuedDate:              time.Now().Add(24 * time.Hour),
+					ExpirationDate:          time.Now().UTC(),
+					IssuedDate:              time.Now().UTC().Add(24 * time.Hour),
 					Revoked:                 false,
 					CertificateAuthorityArn: sql.NullString{String: "arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx", Valid: true},
 				}
@@ -154,6 +154,7 @@ func TestOperationsSignCSR(t *testing.T) {
 					CaArn:         "arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
 					SignAlgorithm: "SHA512WITHRSA",
 					AssumeRole:    false,
+					Validity:      30,
 				}
 
 				return &apiv1.OperationsSignRequest{
@@ -215,7 +216,7 @@ type certificateLogArgMatcher struct {
 	ExtendedKey string
 }
 
-func (m *certificateLogArgMatcher) Matches(x interface{}) bool {
+func (m *certificateLogArgMatcher) Matches(x any) bool {
 	if arg, ok := x.(db.LogCertificateParams); ok {
 		return arg.Account == m.Account &&
 			arg.Environment == m.Environment

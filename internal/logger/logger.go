@@ -5,25 +5,18 @@ import (
 	"time"
 
 	"github.com/gogo/status"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
+
+	"github.com/coinbase/baseca/internal/types"
 )
 
-const (
-	AuthorizationPayloadKey    = "authorization_payload"
-	LoggingContextKey          = "request_header_context"
-	ClientAuthorizationPayload = "client_authorization_payload"
-
-	UserUuid     = "user_uuid"
-	ServiceUuid  = "service_uuid"
-	ErrorMessage = "error_message"
-)
-
-type Extractor func(resp interface{}, err error, code codes.Code) string
+type Extractor func(resp any, err error, code codes.Code) string
 
 type Error struct {
 	UserError     error
@@ -41,47 +34,57 @@ func RpcError(user, internal error) *Error {
 	}
 }
 
-func RpcLogger(
-	extractor Extractor,
-) grpc.UnaryServerInterceptor {
-	return func(
-		ctx context.Context,
-		req interface{},
-		info *grpc.UnaryServerInfo,
-		handler grpc.UnaryHandler,
-	) (resp interface{}, err error) {
+func RpcLogger(extractor Extractor) grpc.UnaryServerInterceptor {
+	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
 		currentTime := time.Now().UTC()
 		result, err := handler(ctx, req)
 		duration := time.Since(currentTime)
 
-		statusCode := codes.Unknown
-		if st, ok := status.FromError(err); ok {
-			statusCode = st.Code()
-		} else if customErr, ok := err.(*Error); ok {
-			statusCode = status.Code(customErr.UserError)
-		}
-
-		logger := log.Info()
+		var event *zerolog.Event
 		if err != nil {
-			logger = log.Error().Err(err)
+			event = log.Error().Err(err)
+		} else {
+			event = log.Info()
 		}
 
-		var clientIP string
-		if p, ok := peer.FromContext(ctx); ok {
-			clientIP = p.Addr.String()
-		}
+		statusCode := extractStatusCode(err)
+		clientIP := extractClientIP(ctx)
 
-		// TODO: Validate Request Identifier (Context Post-Authentication)
-
-		logger.Str("protocol", "grpc").
+		event.Str("protocol", "grpc").
 			Str("method", info.FullMethod).
 			Int("status_code", int(statusCode)).
 			Str("ip_address", clientIP).
-			Dur("duration", duration).
-			Msg(extractor(result, err, statusCode))
+			Dur("duration", duration)
 
+		provisioner, ok := ctx.Value(types.ProvisionerAuthenticationContextKey).(*types.ProvisionerAccountPayload)
+		if ok {
+			event.Str("provisioner_account_uuid", provisioner.ClientId.String())
+		}
+
+		service, ok := ctx.Value(types.ServiceAuthenticationContextKey).(*types.ServiceAccountPayload)
+		if ok {
+			event.Str("service_account_uuid", service.ServiceID.String())
+		}
+
+		event.Msg(extractor(result, err, statusCode))
 		return result, err
 	}
+}
+
+func extractClientIP(ctx context.Context) string {
+	if p, ok := peer.FromContext(ctx); ok {
+		return p.Addr.String()
+	}
+	return ""
+}
+
+func extractStatusCode(err error) codes.Code {
+	if st, ok := status.FromError(err); ok {
+		return st.Code()
+	} else if customErr, ok := err.(*Error); ok {
+		return status.Code(customErr.UserError)
+	}
+	return codes.Unknown
 }
 
 type Logger interface {
@@ -167,7 +170,7 @@ func (ctxLogger *ContextLogger) fields(fields []zap.Field) []zap.Field {
 }
 
 func (ctxLogger *ContextLogger) stackFields(fields []zap.Field) []zap.Field {
-	return append(ctxLogger.fields(fields))
+	return ctxLogger.fields(fields)
 }
 
 func (ctxLogger *ContextLogger) Panic(msg string, fields ...zap.Field) {

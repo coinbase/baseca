@@ -14,8 +14,7 @@ RUN adduser --home /home/baseca baseca --gecos "baseca" --disabled-password && \
     rm -rf /var/cache/apk/*
 
 COPY --from=builder /baseca/target/bin/linux/baseca /home/baseca/baseca
-COPY --from=builder /baseca/internal/authorization/casbin /home/baseca/internal/authorization/casbin
-COPY --from=builder /baseca/internal/attestor/aws_iid/certificate /home/baseca/internal/attestor/aws_iid/certificate
+COPY --from=builder /baseca/config /home/baseca/config
 
 RUN chown -R baseca:baseca /home/baseca
 

@@ -1,6 +1,7 @@
 package validator
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -59,5 +60,28 @@ func Test_ValidateSubjectAlternateNames_ValidSAN_Regex_Success(t *testing.T) {
 	for _, elem := range test_validator {
 		err := ValidateSubjectAlternateNames(elem.RequestSAN, elem.ValidSAN, elem.RegularExpression)
 		assert.NoError(t, err)
+	}
+}
+
+func Test_Contains(t *testing.T) {
+	s := []string{"a", "b", "c"}
+
+	if !Contains(s, "a") {
+		t.Error("Expected slice to contain 'a'")
+	}
+
+	if Contains(s, "d") {
+		t.Error("Did not expect slice to contain 'd'")
+	}
+}
+
+func Test_SanitizeInput(t *testing.T) {
+	input := []string{"a", "b", "a", "c", "c"}
+	expected := []string{"a", "b", "c"}
+
+	result := SanitizeInput(input)
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Expected %v, got %v", expected, result)
 	}
 }

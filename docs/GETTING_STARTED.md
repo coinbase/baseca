@@ -192,11 +192,11 @@ Compile the Golang Binary `baseca`
 
 ```sh
 # Darwin AMD64
-GOOS=darwin GOARCH=amd64 go build -o target/bin/darwin/baseca cmd/server/main.go
+GOOS=darwin GOARCH=amd64 go build -o target/bin/darwin/baseca cmd/baseca/server.go
 database_credentials=secret ./target/bin/darwin/baseca
 
 # Linux AMD64
-GOOS=linux GOARCH=amd64 go build -o target/bin/linux/baseca cmd/server/main.go
+GOOS=linux GOARCH=amd64 go build -o target/bin/linux/baseca cmd/baseca/server.go
 database_credentials=secret ./target/bin/linux/baseca
 ```
 
@@ -216,12 +216,12 @@ ssl_mode: disable
 Start the Golang `baseca` gRPC Server
 
 ```sh
-password=secret go run cmd/server/main.go
+database_credentials=secret go run cmd/baseca/server.go
 ```
 
 ## Signing x.509 Certificate
 
-Start the `baseca` gRPC server via the preferred method within the [Local Deployment](#local-deployment) section and then run the [`baseca.v1.Account/LoginUser`](ENDPOINTS.md#basecav1accountloginuser) RPC method. 
+Start the `baseca` gRPC server via the preferred method within the [Local Deployment](#local-deployment) section and then run the [`baseca.v1.Account/LoginUser`](ENDPOINTS.md#basecav1accountloginuser) RPC method.
 
 ### 1. Generate Authentication Token
 
@@ -314,15 +314,20 @@ import (
 )
 
 func main() {
-    client_id := [CLIENT_ID]
-    client_token := [CLIENT_TOKEN]
-
     configuration := baseca.Configuration{
       URL:         "localhost:9090",
       Environment: baseca.Env.Local,
     }
 
-    client, err := baseca.LoadDefaultConfiguration(configuration, client_id, client_token, baseca.Attestation.Local)
+    authentication := baseca.Authentication{
+      ClientId:    "CLIENT_ID",
+      ClientToken: "CLIENT_TOKEN",
+    }
+
+    client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
+    if err != nil {
+      fmt.Println(err)
+    }
 
     if err != nil {
       // Handle Error
@@ -336,10 +341,12 @@ func main() {
       PublicKeyAlgorithm:    x509.RSA,
       KeySize:               4096,
       Output: baseca.Output{
-        PrivateKey:                "/tmp/private.key", // baseca Generate Private Key Output Location
-        Certificate:               "/tmp/certificate.crt", // baseca Signed Leaf Certificate Output Location
-        CertificateChain:          "/tmp/full_chain.crt", // baseca Signed Certificate Chain Output Location
-        CertificateSigningRequest: "/tmp/request.csr", // baseca CSR Output Location
+        PrivateKey:                   "/tmp/private.key", // baseca Generate Private Key Output Location
+        Certificate:                  "/tmp/certificate.crt", // baseca Signed Leaf Certificate Output Location
+        IntermediateCertificateChain: "/tmp/intermediate_chain.crt", // baseca Signed Certificate Chain Up to Intermediate CA Output Location
+        RootCertificateChain:         "/tmp/root_chain.crt", // baseca Signed Full Certificate Chain Output Location
+        CertificateSigningRequest:    "/tmp/certificate_request.csr", // baseca CSR Output Location
+      },
       }
     }
 

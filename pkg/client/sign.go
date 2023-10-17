@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
+	"github.com/coinbase/baseca/pkg/types"
 )
 
 func (c *client) GenerateSignature(csr CertificateRequest, element []byte) (*[]byte, []*x509.Certificate, error) {
@@ -34,10 +35,11 @@ func (c *client) GenerateSignature(csr CertificateRequest, element []byte) (*[]b
 		return nil, nil, err
 	}
 
-	err = parseCertificateFormat(signedCertificate, SignedCertificate{
+	err = parseCertificateFormat(signedCertificate, types.SignedCertificate{
 		CertificatePath:                  csr.Output.Certificate,
 		IntermediateCertificateChainPath: csr.Output.IntermediateCertificateChain,
-		RootCertificateChainPath:         csr.Output.RootCertificateChain})
+		RootCertificateChainPath:         csr.Output.RootCertificateChain,
+	})
 
 	if err != nil {
 		return nil, nil, err
@@ -81,28 +83,28 @@ func (c *client) GenerateSignature(csr CertificateRequest, element []byte) (*[]b
 	return &signature, certificateChain, nil
 }
 
-func (c *client) ValidateSignature(certificates []*x509.Certificate, signature []byte, element []byte, cn string, ca string) error {
-	err := certificates[0].CheckSignature(x509.SHA256WithRSA, element, signature)
+func (c *client) ValidateSignature(tc types.TrustChain, manifest types.Manifest) error {
+	err := manifest.CertificateChain[0].CheckSignature(manifest.SigningAlgorithm, manifest.Data, manifest.Signature)
 	if err != nil {
 		return fmt.Errorf("signature verification failed: %s", err)
 	}
 
-	// Validate Entire Certificate Chain Valid
-	for i := range certificates[:len(certificates)-1] {
-		err = certificates[i].CheckSignatureFrom(certificates[i+1])
+	// Validate Entire Certificate Chain Does Not Break
+	for i := range manifest.CertificateChain[:len(manifest.CertificateChain)-1] {
+		err = manifest.CertificateChain[i].CheckSignatureFrom(manifest.CertificateChain[i+1])
 		if err != nil {
 			return fmt.Errorf("certificate chain invalid: %s", err)
 		}
 	}
 
-	if certificates[0].Subject.CommonName != cn {
+	if manifest.CertificateChain[0].Subject.CommonName != tc.CommonName {
 		return fmt.Errorf("invalid common name (cn) from code signing certificate")
 	}
 
 	validSubjectAlternativeName := false
-	if len(certificates[0].DNSNames) > 0 {
-		for _, san := range certificates[0].DNSNames {
-			if san == cn {
+	if len(manifest.CertificateChain[0].DNSNames) > 0 {
+		for _, san := range manifest.CertificateChain[0].DNSNames {
+			if san == tc.CommonName {
 				validSubjectAlternativeName = true
 			}
 		}
@@ -112,7 +114,7 @@ func (c *client) ValidateSignature(certificates []*x509.Certificate, signature [
 		return fmt.Errorf("invalid subject alternative name (san) from code signing certificate")
 	}
 
-	rootCertificatePool, err := c.generateCertificatePool(ca)
+	rootCertificatePool, err := c.generateCertificatePool(tc)
 	if err != nil {
 		return err
 	}
@@ -121,25 +123,43 @@ func (c *client) ValidateSignature(certificates []*x509.Certificate, signature [
 		Roots:     rootCertificatePool,
 		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
 	}
-	_, err = certificates[1].Verify(opts)
+	_, err = manifest.CertificateChain[1].Verify(opts)
 	if err != nil {
 		return fmt.Errorf("error validating code signing certificate validity: %s", err)
 	}
 	return nil
 }
 
-func (c *client) generateCertificatePool(ca string) (*x509.CertPool, error) {
+func (c *client) generateCertificatePool(tc types.TrustChain) (*x509.CertPool, error) {
 	certPool := x509.NewCertPool()
 
-	files, err := os.ReadDir(ca)
-	if err != nil {
-		return nil, errors.New("invalid certificate authority directory")
+	for _, dir := range tc.CertificateAuthorityDirectory {
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			return nil, errors.New("invalid certificate authority directory")
+		}
+
+		for _, certFile := range files {
+			data, err := os.ReadFile(filepath.Join(dir, certFile.Name()))
+			if err != nil {
+				return nil, errors.New("invalid certificate file")
+			}
+			pemBlock, _ := pem.Decode(data)
+			if pemBlock == nil || pemBlock.Type != "CERTIFICATE" {
+				return nil, errors.New("invalid input file")
+			}
+			cert, err := x509.ParseCertificate(pemBlock.Bytes)
+			if err != nil {
+				return nil, errors.New("error parsing x.509 certificate")
+			}
+			certPool.AddCert(cert)
+		}
 	}
 
-	for _, certFile := range files { // #nosec G304 User Only Has Predefined Environment Parameters
-		data, err := os.ReadFile(filepath.Join(ca, certFile.Name()))
+	for _, ca := range tc.CertificateAuthorityFiles {
+		data, err := os.ReadFile(ca)
 		if err != nil {
-			return nil, errors.New("invalid certificate file")
+			return nil, errors.New("invalid certificate authority file")
 		}
 		pemBlock, _ := pem.Decode(data)
 		if pemBlock == nil || pemBlock.Type != "CERTIFICATE" {
