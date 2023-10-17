@@ -7,6 +7,7 @@ type SubordinateCertificate struct {
 	AssumeRole  bool   `mapstructure:"assume_role"`
 	RoleArn     string `mapstructure:"role_arn"`
 	RootCa      bool   `mapstructure:"root_ca"`
+	Default     bool   `mapstructure:"default"`
 }
 
 type SubordinateCertificateAuthority struct {
@@ -59,7 +60,7 @@ type SecretsManagerConfig struct {
 	Region   string `mapstructure:"region"`
 }
 
-type Environment struct {
+type Stage struct {
 	Local         []string `mapstructure:"local"`
 	Sandbox       []string `mapstructure:"sandbox"`
 	Development   []string `mapstructure:"development"`
@@ -80,5 +81,5 @@ type Config struct {
 	ACMPCA              map[string]SubordinateCertificate `mapstructure:"acm_pca"`
 	SecretsManager      SecretsManagerConfig              `mapstructure:"secrets_manager"`
 	SubordinateMetadata SubordinateCertificateAuthority   `mapstructure:"subordinate_ca_metadata"`
-	Environment         Environment                       `mapstructure:"certificate_authority"`
+	Environment         Stage                             `mapstructure:"certificate_authority"`
 }

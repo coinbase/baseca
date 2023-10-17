@@ -109,10 +109,10 @@ type ServiceClient interface {
 	DeleteProvisionedServiceAccount(ctx context.Context, in *apiv1.AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
-func LoadDefaultConfiguration(configuration Configuration, client_id, client_token, attestation string) (*client, error) {
+func LoadDefaultConfiguration(configuration Configuration, attestation string, authentication Authentication) (*client, error) {
 	c := client{
 		endpoint:       configuration.URL,
-		authentication: Authentication{client_id, client_token},
+		authentication: authentication,
 		attestation:    attestation,
 	}
 

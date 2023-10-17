@@ -25,7 +25,6 @@ OFFSET $3;
 
 -- name: ListCertificates :many
 SELECT * FROM certificates
-ORDER BY certificates
 LIMIT $1
 OFFSET $2;
 

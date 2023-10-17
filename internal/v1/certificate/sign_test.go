@@ -7,15 +7,11 @@ import (
 
 	"github.com/coinbase/baseca/db/mock"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/authentication"
+	"github.com/coinbase/baseca/internal/types"
 	baseca "github.com/coinbase/baseca/pkg/client"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-)
-
-const (
-	_client_header = "client_authorization_payload"
+	"go.uber.org/mock/gomock"
 )
 
 func TestSignCSR(t *testing.T) {
@@ -60,7 +56,7 @@ func TestSignCSR(t *testing.T) {
 			c, err := buildCertificateConfig(store)
 			require.NoError(t, err)
 
-			ctx := context.WithValue(context.Background(), _client_header, &authentication.ServicePayload{
+			ctx := context.WithValue(context.Background(), types.ServiceAuthenticationContextKey, &types.ServiceAccountPayload{
 				ServiceID:                   uuid.New(),
 				ServiceAccount:              "example",
 				Environment:                 "development",
@@ -68,6 +64,7 @@ func TestSignCSR(t *testing.T) {
 				ValidCertificateAuthorities: []string{"sandbox_use1"},
 				CertificateValidity:         int16(30),
 				ExtendedKey:                 "EndEntityServerAuthCertificate",
+				SubordinateCa:               "infrastructure",
 			})
 
 			req := tc.req()

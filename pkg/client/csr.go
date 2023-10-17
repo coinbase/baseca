@@ -12,20 +12,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"github.com/coinbase/baseca/pkg/types"
 )
 
-type SigningRequest struct {
-	CSR        *bytes.Buffer
-	PrivateKey *pem.Block
-}
-
-type SignedCertificate struct {
-	CertificatePath                  string
-	IntermediateCertificateChainPath string
-	RootCertificateChainPath         string
-}
-
-func GenerateCSR(csr CertificateRequest) (*SigningRequest, error) {
+func GenerateCSR(csr CertificateRequest) (*types.SigningRequest, error) {
 	switch csr.PublicKeyAlgorithm {
 	case x509.RSA:
 		if csr.KeySize < 2048 {
@@ -88,7 +79,7 @@ func GenerateCSR(csr CertificateRequest) (*SigningRequest, error) {
 			}
 		}
 
-		return &SigningRequest{
+		return &types.SigningRequest{
 			CSR:        certificatePem,
 			PrivateKey: pkBlock,
 		}, nil
@@ -136,7 +127,7 @@ func GenerateCSR(csr CertificateRequest) (*SigningRequest, error) {
 			}
 		}
 
-		return &SigningRequest{
+		return &types.SigningRequest{
 			CSR:        certificatePem,
 			PrivateKey: pkBlock,
 		}, nil

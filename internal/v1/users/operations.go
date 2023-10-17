@@ -7,10 +7,9 @@ import (
 
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/authentication"
-	"github.com/coinbase/baseca/internal/authorization"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/logger"
-	"github.com/coinbase/baseca/internal/validator"
 	"github.com/gogo/status"
 	"github.com/google/uuid"
 	passwordvalidator "github.com/wagslane/go-password-validator"
@@ -33,7 +32,7 @@ func (u *User) LoginUser(ctx context.Context, req *apiv1.LoginUserRequest) (*api
 		return nil, logger.RpcError(status.Error(codes.Unauthenticated, "authentication failed"), err)
 	}
 
-	if err := authentication.CheckPassword(req.Password, user.HashedCredential); err != nil {
+	if err := lib.CheckPassword(req.Password, user.HashedCredential); err != nil {
 		return nil, logger.RpcError(status.Error(codes.Unauthenticated, "authentication failed"), err)
 	}
 
@@ -44,7 +43,7 @@ func (u *User) LoginUser(ctx context.Context, req *apiv1.LoginUserRequest) (*api
 		return int64(u.validity)
 	}()
 
-	accessToken, err := u.auth.Issue(ctx, authentication.ClaimProps{
+	accessToken, err := u.auth.Issue(ctx, lib.ClaimProps{
 		Subject:         user.Uuid,
 		Permission:      user.Permissions,
 		ValidForMinutes: validity,
@@ -68,7 +67,7 @@ func (u *User) LoginUser(ctx context.Context, req *apiv1.LoginUserRequest) (*api
 }
 
 func (u *User) CreateUser(ctx context.Context, req *apiv1.CreateUserRequest) (*apiv1.User, error) {
-	if !authorization.IsSupportedPermission(req.Permissions) {
+	if !validator.IsSupportedPermission(req.Permissions) {
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid permission field"), fmt.Errorf("invalid permission %s", req.Permissions))
 	}
 
@@ -77,7 +76,7 @@ func (u *User) CreateUser(ctx context.Context, req *apiv1.CreateUserRequest) (*a
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "minimum password strength requirement not met"), err)
 	}
 
-	hashedCredential, err := authentication.HashPassword(req.Password)
+	hashedCredential, err := lib.HashPassword(req.Password)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Unauthenticated, "authentication error"), err)
 	}
@@ -188,7 +187,7 @@ func (u *User) ListUsers(ctx context.Context, req *apiv1.QueryParameter) (*apiv1
 }
 
 func (u *User) UpdateUserPermissions(ctx context.Context, req *apiv1.UpdatePermissionsRequest) (*apiv1.User, error) {
-	if !authorization.IsSupportedPermission(req.Permissions) {
+	if !validator.IsSupportedPermission(req.Permissions) {
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid permission field"), fmt.Errorf("invalid permission %s", req.Permissions))
 	}
 
@@ -218,7 +217,7 @@ func (u *User) UpdateUserCredentials(ctx context.Context, req *apiv1.UpdateCrede
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	if err := authentication.CheckPassword(req.Password, user.HashedCredential); err != nil {
+	if err := lib.CheckPassword(req.Password, user.HashedCredential); err != nil {
 		return nil, logger.RpcError(status.Error(codes.PermissionDenied, "authentication failed"), err)
 	}
 
@@ -227,7 +226,7 @@ func (u *User) UpdateUserCredentials(ctx context.Context, req *apiv1.UpdateCrede
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "minimum password strength requirement not met"), err)
 	}
 
-	hashedCredential, err := authentication.HashPassword(req.UpdatedPassword)
+	hashedCredential, err := lib.HashPassword(req.UpdatedPassword)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}

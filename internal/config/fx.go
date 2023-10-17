@@ -3,7 +3,6 @@ package config
 import (
 	"log"
 
-	"github.com/coinbase/baseca/internal/environment"
 	"github.com/coinbase/baseca/internal/logger"
 	"go.uber.org/fx"
 )
@@ -12,6 +11,7 @@ var Module = fx.Options(
 	fx.Provide(
 		ProvideConfigPathResolver,
 		ProvideConfig,
+		ProvideEnvironment,
 	),
 )
 
@@ -20,7 +20,7 @@ var Configuration *Config
 type Parameter struct {
 	fx.In
 
-	Environment  environment.Environment
+	Environment  Environment
 	PathResolver ConfigFilePathResolver
 }
 
@@ -32,7 +32,7 @@ type Result struct {
 }
 
 type ConfigProvider interface {
-	Get(path string, cfg interface{}) error
+	Get(path string, cfg any) error
 	Exists(path string) bool
 }
 

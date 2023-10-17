@@ -1,4 +1,4 @@
-package authentication
+package lib
 
 import (
 	"crypto/rand"

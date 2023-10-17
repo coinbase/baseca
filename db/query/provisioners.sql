@@ -27,6 +27,5 @@ WHERE client_id = $1;
 
 -- name: ListProvisionerAccounts :many
 SELECT * FROM provisioners
-ORDER BY provisioners
 LIMIT $1
 OFFSET $2;

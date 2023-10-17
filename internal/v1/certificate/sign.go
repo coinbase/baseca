@@ -10,24 +10,23 @@ import (
 
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/authentication"
-	acm_pca "github.com/coinbase/baseca/internal/client/acmpca"
+	"github.com/coinbase/baseca/internal/client/acmpca"
 	"github.com/coinbase/baseca/internal/config"
 	"github.com/coinbase/baseca/internal/lib/crypto"
 	"github.com/coinbase/baseca/internal/lib/util"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/coinbase/baseca/internal/validator"
 	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (c *Certificate) SignCSR(ctx context.Context, req *apiv1.CertificateSigningRequest) (*apiv1.SignedCertificate, error) {
-	var service *authentication.ServicePayload
+	var service *types.ServiceAccountPayload
 	var ok bool
 
-	if service, ok = ctx.Value(types.ClientAuthorizationPayload).(*authentication.ServicePayload); !ok {
+	if service, ok = ctx.Value(types.ServiceAuthenticationContextKey).(*types.ServiceAccountPayload); !ok {
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), fmt.Errorf("service payload malformatted: %+v", service))
 	}
 
@@ -79,7 +78,7 @@ func (c *Certificate) SignCSR(ctx context.Context, req *apiv1.CertificateSigning
 
 }
 
-func (c *Certificate) requestCertificate(ctx context.Context, authPayload *authentication.ServicePayload, certificateRequest *x509.CertificateRequest) (*db.CertificateResponseData, error) {
+func (c *Certificate) requestCertificate(ctx context.Context, authPayload *types.ServiceAccountPayload, certificateRequest *x509.CertificateRequest) (*db.CertificateResponseData, error) {
 	var subordinate *types.CertificateAuthority
 	var parameters types.CertificateRequest
 	var csr *bytes.Buffer
@@ -113,7 +112,7 @@ func (c *Certificate) requestCertificate(ctx context.Context, authPayload *authe
 			CommonName:            intermediateCa,
 			SubjectAlternateNames: []string{intermediateCa},
 			SigningAlgorithm:      signingAlgorithm.Common,
-			PublicKeyAlgorithm:    types.ValidAlgorithms[c.ca.KeyAlgorithm].Algorithm,
+			PublicKeyAlgorithm:    types.PublicKeyAlgorithms[c.ca.KeyAlgorithm].Algorithm,
 			KeySize:               c.ca.KeySize,
 			DistinguishedName: types.DistinguishedName{
 				Country:            []string{c.ca.Country},
@@ -174,7 +173,7 @@ func (c *Certificate) requestCertificate(ctx context.Context, authPayload *authe
 	}
 }
 
-func (c *Certificate) validateCertificateRequestParameters(csr *x509.CertificateRequest, auth authentication.ServicePayload) error {
+func (c *Certificate) validateCertificateRequestParameters(csr *x509.CertificateRequest, auth types.ServiceAccountPayload) error {
 	if err := csr.CheckSignature(); err != nil {
 		return logger.RpcError(status.Error(codes.InvalidArgument, "invalid signature for certificate signing request (csr)"), err)
 	}
@@ -213,7 +212,7 @@ func (c *Certificate) rateLimit(ctx context.Context, certificateRequest *x509.Ce
 	return nil
 }
 
-func (c *Certificate) issueSubordinate(auth *authentication.ServicePayload, certificate_signing_request *bytes.Buffer, service_name string) error {
+func (c *Certificate) issueSubordinate(auth *types.ServiceAccountPayload, certificate_signing_request *bytes.Buffer, service_name string) error {
 	var ca_certificate *x509.Certificate
 	var err error
 
@@ -223,7 +222,7 @@ func (c *Certificate) issueSubordinate(auth *authentication.ServicePayload, cert
 
 		// c.pca Mock Private CA
 		if c.pca == nil {
-			client, err := acm_pca.NewPrivateCaClient(ca_parameters)
+			client, err := acmpca.NewPrivateCaClient(ca_parameters)
 			if err != nil {
 				return err
 			}

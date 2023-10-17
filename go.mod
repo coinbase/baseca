@@ -18,7 +18,6 @@ require (
 	github.com/casbin/casbin/v2 v2.77.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gogo/status v1.1.1
-	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.3.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/lib/pq v1.10.9
@@ -29,6 +28,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/wagslane/go-password-validator v0.3.0
 	go.uber.org/fx v1.20.0
+	go.uber.org/mock v0.3.0
 	go.uber.org/zap v1.25.0
 	golang.org/x/crypto v0.12.0
 	golang.org/x/net v0.14.0

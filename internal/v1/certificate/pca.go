@@ -4,14 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/x509"
-	"encoding/binary"
 	"fmt"
 	"math/big"
-	math_rand "math/rand"
 	"time"
 
 	db "github.com/coinbase/baseca/db/sqlc"
-	"github.com/coinbase/baseca/internal/authentication"
 	"github.com/coinbase/baseca/internal/client/firehose"
 	"github.com/coinbase/baseca/internal/lib/crypto"
 	"github.com/coinbase/baseca/internal/types"
@@ -28,13 +25,12 @@ func (c *Certificate) buildCertificateAuthorityParameters(certificate_authority 
 	}
 }
 
-func (c *Certificate) issueEndEntityCertificate(auth *authentication.ServicePayload, ca_certificate *types.CertificateAuthority, request_csr *x509.CertificateRequest) (*db.CertificateResponseData, error) {
+func (c *Certificate) issueEndEntityCertificate(auth *types.ServiceAccountPayload, ca_certificate *types.CertificateAuthority, request_csr *x509.CertificateRequest) (*db.CertificateResponseData, error) {
 	block := make([]byte, 20)
 	_, err := rand.Read(block[:])
 	if err != nil {
 		return nil, err
 	}
-	math_rand.Seed(int64(binary.LittleEndian.Uint64(block[:])))
 
 	output := big.NewInt(0).SetBytes(block)
 	issuedDate := time.Now().UTC()
@@ -47,7 +43,7 @@ func (c *Certificate) issueEndEntityCertificate(auth *authentication.ServicePayl
 	certificateTemplate := x509.Certificate{
 		DNSNames:           request_csr.DNSNames,
 		Signature:          request_csr.Signature,
-		SignatureAlgorithm: request_csr.SignatureAlgorithm,
+		SignatureAlgorithm: ca_certificate.Certificate.SignatureAlgorithm,
 		PublicKeyAlgorithm: request_csr.PublicKeyAlgorithm,
 		PublicKey:          request_csr.PublicKey,
 		SerialNumber:       output,
@@ -93,7 +89,6 @@ func (c *Certificate) issueEndEntityCertificate(auth *authentication.ServicePayl
 		IssuedDate:              issuedDate,
 		CaSerialNumber:          ca_certificate.SerialNumber,
 		CertificateAuthorityArn: ca_certificate.CertificateAuthorityArn,
-		Timestamp:               time.Now().UTC(),
 	}
 
 	event := firehose.ForwardedEventUploadEvent{

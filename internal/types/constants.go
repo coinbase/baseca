@@ -1,9 +1,16 @@
 package types
 
+type ContextKey int
+
 const (
 	// Context Metadata
-	AuthorizationPayloadKey        = "authorization_payload"
-	LoggingContextKey              = "request_header_context"
-	ClientAuthorizationPayload     = "client_authorization_payload"
-	EnrollmentAuthorizationPayload = "enrollment_authorization_payload"
+	ServiceAuthenticationContextKey     ContextKey = iota
+	ProvisionerAuthenticationContextKey ContextKey = iota
+	UserAuthenticationContextKey        ContextKey = iota
+	EnrollmentAuthenticationContextKey  ContextKey = iota
+
+	// User Permissions
+	ADMIN      = "ADMIN"
+	PRIVILEGED = "PRIVILEGED"
+	READ       = "READ"
 )

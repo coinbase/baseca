@@ -4,6 +4,7 @@ import (
 	"context"
 
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
+	"github.com/coinbase/baseca/pkg/types"
 )
 
 func (c *client) ProvisionIssueCertificate(certificateRequest CertificateRequest, ca *apiv1.CertificateAuthorityParameter, service, environment, extendedKey string) (*apiv1.SignedCertificate, error) {
@@ -25,7 +26,7 @@ func (c *client) ProvisionIssueCertificate(certificateRequest CertificateRequest
 		return nil, err
 	}
 
-	err = parseCertificateFormat(signedCertificate, SignedCertificate{
+	err = parseCertificateFormat(signedCertificate, types.SignedCertificate{
 		CertificatePath:                  certificateRequest.Output.Certificate,
 		IntermediateCertificateChainPath: certificateRequest.Output.IntermediateCertificateChain,
 		RootCertificateChainPath:         certificateRequest.Output.RootCertificateChain,

@@ -3,7 +3,7 @@ package aws_iid
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -48,7 +48,7 @@ func httpGetRequest(uri string) ([]byte, error) {
 		return nil, err
 	} else {
 		defer response.Body.Close() // #nosec G307 False Positive
-		response, err := ioutil.ReadAll(response.Body)
+		response, err := io.ReadAll(response.Body)
 		if err != nil {
 			return nil, err
 		}

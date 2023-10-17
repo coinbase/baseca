@@ -6,7 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	mock_store "github.com/coinbase/baseca/db/mock"
 	db "github.com/coinbase/baseca/db/sqlc"
-	"github.com/coinbase/baseca/internal/authentication"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
 	"github.com/coinbase/baseca/test"
 	"github.com/stretchr/testify/mock"
 )
@@ -38,13 +38,13 @@ func buildUsersConfig(store *mock_store.MockStore) (*User, error) {
 		}, nil,
 	)
 
-	signer := &authentication.Client{
+	signer := &lib.Client{
 		KmsClient:        mockKms,
 		KeyId:            config.KMS.KeyId,
 		SigningAlgorithm: config.KMS.SigningAlgorithm,
 	}
 
-	auth, err := authentication.NewAuthSigningMetadata(signer)
+	auth, err := lib.NewAuthSigningMetadata(signer)
 	if err != nil {
 		return nil, err
 	}

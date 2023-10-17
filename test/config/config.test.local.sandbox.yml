@@ -29,6 +29,14 @@ acm_pca:
     ca_active_day: 90
     assume_role: false
     root_ca: false
+    default: true
+  sandbox_use2:
+    region: us-east-2
+    ca_arn: arn:aws:acm-pca:us-east-1:123456789012:certificate-authority/yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+    ca_active_day: 90
+    assume_role: false
+    root_ca: false
+    default: true
 
 firehose:
   stream: baseca-test
@@ -58,3 +66,4 @@ subordinate_ca_metadata:
 certificate_authority:
   sandbox:
     - sandbox_use1
+    - sandbox_use2

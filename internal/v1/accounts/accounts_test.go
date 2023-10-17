@@ -3,7 +3,7 @@ package accounts
 import (
 	mock_store "github.com/coinbase/baseca/db/mock"
 	db "github.com/coinbase/baseca/db/sqlc"
-	"github.com/coinbase/baseca/internal/validator"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/test"
 )
 
