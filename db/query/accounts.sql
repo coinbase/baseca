@@ -68,3 +68,8 @@ WHERE valid_subject_alternate_name = ANY($1::string[]);
 -- name: GetServiceAccountByMetadata :many
 SELECT * FROM accounts
 WHERE service_account LIKE $1 AND environment LIKE $2 AND extended_key LIKE $3;
+
+-- name: ListValidCertificateAuthorityFromSubordinateCA :many
+SELECT DISTINCT unnest(valid_certificate_authorities) AS certificate_authorities
+FROM accounts
+WHERE subordinate_ca = $1 AND environment = $2;

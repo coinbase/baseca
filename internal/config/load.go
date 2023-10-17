@@ -18,7 +18,7 @@ var _ ConfigProvider = (*configProvider)(nil)
 
 func BuildViper(path string) (*viper.Viper, error) {
 	ctxLogger := logger.ContextLogger{Logger: logger.DefaultLogger}
-	ctxLogger.Info("Setting up Viper to load configuration", zap.String("config-path", path))
+	ctxLogger.Info("setting up Viper to load configuration", zap.String("config-path", path))
 
 	v := viper.New()
 	v.SetConfigFile(path)
@@ -33,12 +33,12 @@ func BuildViper(path string) (*viper.Viper, error) {
 
 func LoadConfig(viper *viper.Viper) (*Config, error) {
 	if viper == nil {
-		return nil, errors.New("Failed to load config.")
+		return nil, errors.New("failed to load config")
 	}
 
 	c := Config{}
 	if err := viper.Unmarshal(&c); err != nil {
-		return nil, errors.New("Failed to read configuration file.")
+		return nil, errors.New("failed to read configuration file")
 	}
 	return &c, nil
 }
@@ -47,9 +47,9 @@ func NewConfigProviderFromViper(v *viper.Viper) ConfigProvider {
 	return &configProvider{v: v}
 }
 
-func (cp *configProvider) Get(path string, cfg interface{}) error {
+func (cp *configProvider) Get(path string, cfg any) error {
 	if !cp.Exists(path) {
-		return fmt.Errorf("Path %s is not found in configuration.", path)
+		return fmt.Errorf("path %s is not found in configuration", path)
 	}
 
 	if err := cp.v.UnmarshalKey(path, cfg, func(setting *mapstructure.DecoderConfig) {

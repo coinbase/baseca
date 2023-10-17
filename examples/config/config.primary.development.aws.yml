@@ -25,11 +25,13 @@ acm_pca:
     ca_active_day: 90
     assume_role: false
     root_ca: false
+    default: true
   development_usw1:
     region: us-west-1
     ca_arn: arn:aws:acm-pca:us-west-1:123456789012:certificate-authority/yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
     ca_active_day: 90
     assume_role: false
+    default: false
 
 firehose:
   stream: baseca-development

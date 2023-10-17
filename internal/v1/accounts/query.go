@@ -7,9 +7,9 @@ import (
 
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/coinbase/baseca/internal/validator"
 	"github.com/gogo/status"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"

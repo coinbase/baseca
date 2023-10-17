@@ -7,7 +7,7 @@ import (
 
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/validator"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 )
 
 const (

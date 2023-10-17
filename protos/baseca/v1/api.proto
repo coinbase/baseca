@@ -295,6 +295,7 @@ message ProvisionServiceAccountRequest {
   NodeAttestation node_attestation = 9;
   string team = 10;
   string email = 11;
+  optional string region = 12;
 }
 
 message ProvisionServiceAccountResponse {

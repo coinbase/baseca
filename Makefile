@@ -29,8 +29,8 @@ test: info clean dependencies
 
 .PHONY: build
 build: info clean
-	@ GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/darwin/$(SERVICE) cmd/server/main.go
-	@ GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/linux/$(SERVICE) cmd/server/main.go
+	@ GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/darwin/$(SERVICE) cmd/baseca/server.go
+	@ GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/linux/$(SERVICE) cmd/baseca/server.go
 
 .PHONY: sqlc
 sqlc:
@@ -47,7 +47,7 @@ gen: info clean
 .PHONY: server 
 server:
 	@ database_credentials=${DATABASE_CREDENTIALS} \
-		go run cmd/server/main.go
+		go run cmd/baseca/server.go
 
 .PHONY: lint
 lint:
@@ -55,7 +55,9 @@ lint:
 
 .PHONY: tools
 tools:
+	@ go install go.uber.org/mock/mockgen@latest
 	@ go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
 	@ go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.2
 	@ go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	@ which buf || (go install github.com/bufbuild/buf/cmd/buf@latest)
+

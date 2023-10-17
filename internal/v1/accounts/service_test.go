@@ -11,23 +11,23 @@ import (
 	"github.com/coinbase/baseca/db/mock"
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/authentication"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/mock/gomock"
 )
 
 func TestCreateServiceAccount(t *testing.T) {
 	id, err := uuid.NewRandom()
 	require.NoError(t, err)
 
-	authClaim := &authentication.Claims{
+	authClaim := &lib.Claims{
 		Permission: "ADMIN",
 		Subject:    id,
-		IssuedAt:   time.Now(),
-		ExpiresAt:  time.Now().AddDate(0, 0, 1),
-		NotBefore:  time.Now(),
+		IssuedAt:   time.Now().UTC(),
+		ExpiresAt:  time.Now().UTC().AddDate(0, 0, 1),
+		NotBefore:  time.Now().UTC(),
 	}
 
 	attestation := apiv1.AWSInstanceIdentityDocument{
@@ -92,7 +92,7 @@ func TestCreateServiceAccount(t *testing.T) {
 					EqStoreInstanceIdentityDocumentParams(attestationParam, "iid arg matcher"),
 				).Times(1).Return(&db.Account{}, nil)
 			},
-			ctx: context.WithValue(context.Background(), types.AuthorizationPayloadKey, authClaim),
+			ctx: context.WithValue(context.Background(), types.UserAuthenticationContextKey, authClaim),
 			check: func(t *testing.T, res *apiv1.CreateServiceAccountResponse, err error) {
 				require.NoError(t, err)
 			},
@@ -130,7 +130,7 @@ func TestCreateServiceAccount(t *testing.T) {
 					EqCreateServiceAccountParams(account_arg, "account arg matcher"),
 				).Times(1).Return(&db.Account{}, nil)
 			},
-			ctx: context.WithValue(context.Background(), types.AuthorizationPayloadKey, authClaim),
+			ctx: context.WithValue(context.Background(), types.UserAuthenticationContextKey, authClaim),
 			check: func(t *testing.T, res *apiv1.CreateServiceAccountResponse, err error) {
 				require.NoError(t, err)
 			},
@@ -168,7 +168,7 @@ func TestCreateServiceAccount(t *testing.T) {
 					EqCreateServiceAccountParams(account_arg, "account arg matcher"),
 				).Times(1).Return(&db.Account{}, nil)
 			},
-			ctx: context.WithValue(context.Background(), types.AuthorizationPayloadKey, authClaim),
+			ctx: context.WithValue(context.Background(), types.UserAuthenticationContextKey, authClaim),
 			check: func(t *testing.T, res *apiv1.CreateServiceAccountResponse, err error) {
 				require.NoError(t, err)
 			},
@@ -187,7 +187,7 @@ func TestCreateServiceAccount(t *testing.T) {
 				Email:                   "security@coinbase.com",
 			},
 			build: func(store *mock.MockStore) {},
-			ctx:   context.WithValue(context.Background(), types.AuthorizationPayloadKey, authClaim),
+			ctx:   context.WithValue(context.Background(), types.UserAuthenticationContextKey, authClaim),
 			check: func(t *testing.T, res *apiv1.CreateServiceAccountResponse, err error) {
 				require.Error(t, err)
 			},
@@ -218,7 +218,7 @@ type eqCreateServiceAccountParamsMatcher struct {
 	password string
 }
 
-func (e eqCreateServiceAccountParamsMatcher) Matches(x interface{}) bool {
+func (e eqCreateServiceAccountParamsMatcher) Matches(x any) bool {
 	arg, ok := x.(db.CreateServiceAccountParams)
 	if !ok {
 		return false
@@ -243,7 +243,7 @@ type eqStoreInstanceIdentityDocumentParamsMatcher struct {
 	password string
 }
 
-func (e eqStoreInstanceIdentityDocumentParamsMatcher) Matches(x interface{}) bool {
+func (e eqStoreInstanceIdentityDocumentParamsMatcher) Matches(x any) bool {
 	arg, ok := x.(db.StoreInstanceIdentityDocumentParams)
 	if !ok {
 		return false

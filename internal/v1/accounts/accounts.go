@@ -10,7 +10,7 @@ type Service struct {
 	apiv1.ServiceServer
 	store       db.DatabaseEndpoints
 	acmConfig   map[string]config.SubordinateCertificate
-	environment config.Environment
+	environment config.Stage
 }
 
 func New(cfg *config.Config, endpoints db.DatabaseEndpoints) *Service {

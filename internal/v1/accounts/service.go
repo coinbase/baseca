@@ -8,11 +8,11 @@ import (
 
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/attestor/aws_iid"
-	"github.com/coinbase/baseca/internal/authentication"
+	"github.com/coinbase/baseca/internal/attestation/aws_iid"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/coinbase/baseca/internal/validator"
 	"github.com/gogo/status"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -54,19 +54,19 @@ func (s *Service) CreateServiceAccount(ctx context.Context, req *apiv1.CreateSer
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	clientToken, err := authentication.GenerateClientToken(32)
+	clientToken, err := lib.GenerateClientToken(32)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	hashedClientToken, err := authentication.HashPassword(clientToken)
+	hashedClientToken, err := lib.HashPassword(clientToken)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	payload, ok := ctx.Value(types.AuthorizationPayloadKey).(*authentication.Claims)
+	payload, ok := ctx.Value(types.UserAuthenticationContextKey).(*lib.Claims)
 	if !ok {
-		logger.RpcError(status.Error(codes.Internal, "internal server error"), fmt.Errorf("service auth context missing"))
+		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), fmt.Errorf("service auth context missing"))
 	}
 
 	// Production Service Accounts Require Attestation

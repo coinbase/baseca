@@ -29,7 +29,7 @@ func LockfileBackoff(lockfilePath string) error {
 			}
 			time.Sleep(backoff)
 		}
-		return errors.New(ERROR_LOCKFILE_PRESENT)
+		return errors.New("subordinate ca lockfile present")
 	}
 	return nil
 }

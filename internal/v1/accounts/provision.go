@@ -9,11 +9,11 @@ import (
 
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
-	"github.com/coinbase/baseca/internal/attestor/aws_iid"
-	"github.com/coinbase/baseca/internal/authentication"
+	"github.com/coinbase/baseca/internal/attestation/aws_iid"
+	lib "github.com/coinbase/baseca/internal/lib/authentication"
+	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/coinbase/baseca/internal/types"
-	"github.com/coinbase/baseca/internal/validator"
 	"github.com/gogo/status"
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
@@ -73,17 +73,17 @@ func (s *Service) CreateProvisionerAccount(ctx context.Context, req *apiv1.Creat
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	clientToken, err := authentication.GenerateClientToken(32)
+	clientToken, err := lib.GenerateClientToken(32)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	hashedClientToken, err := authentication.HashPassword(clientToken)
+	hashedClientToken, err := lib.HashPassword(clientToken)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	payload, ok := ctx.Value(types.AuthorizationPayloadKey).(*authentication.Claims)
+	payload, ok := ctx.Value(types.UserAuthenticationContextKey).(*lib.Claims)
 	if !ok {
 		return nil, status.Error(codes.InvalidArgument, "service auth context missing")
 	}
@@ -207,7 +207,7 @@ func (s *Service) ProvisionServiceAccount(ctx context.Context, req *apiv1.Provis
 	subject_alternative_names := validator.SanitizeInput(req.SubjectAlternativeNames)
 	certificate_authorities := validator.SanitizeInput(req.CertificateAuthorities)
 
-	payload, ok := ctx.Value(types.ClientAuthorizationPayload).(*authentication.ProvisionerAccountPayload)
+	payload, ok := ctx.Value(types.ProvisionerAuthenticationContextKey).(*types.ProvisionerAccountPayload)
 	if !ok {
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "service auth context missing"), fmt.Errorf("service auth context missing"))
 	}
@@ -219,6 +219,11 @@ func (s *Service) ProvisionServiceAccount(ctx context.Context, req *apiv1.Provis
 	err := s.validateSanInputServiceAccount(ctx, req.ServiceAccount, req.Environment, req.SubjectAlternativeNames, &req.RegularExpression)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "provisioner subject alternative name (san) validation error"), fmt.Errorf("provisioner subject alternative name validation error [%s]", err))
+	}
+
+	err = s.CheckSubordinateCaRegion(req.SubordinateCa, req.Region, req.Environment, req.CertificateAuthorities)
+	if err != nil {
+		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "subordinate ca does not support region"), fmt.Errorf("subordinate ca does not support region [%s] for service account [%s] %s", *req.Region, req.ServiceAccount, err))
 	}
 
 	regex, err := regexp.Compile(payload.RegularExpression)
@@ -233,7 +238,25 @@ func (s *Service) ProvisionServiceAccount(ctx context.Context, req *apiv1.Provis
 	}
 
 	if len(certificate_authorities) == 0 {
-		certAuth = append(certAuth, validator.CertificateAuthorityEnvironments[req.Environment]...)
+		environment := req.Environment
+		certificate_authorities := validator.CertificateAuthorityEnvironments[environment]
+
+		// Include Default Certificate Authorities
+		for _, ca := range certificate_authorities {
+			ca_metadata := s.acmConfig[ca]
+			if ca_metadata.Default {
+				// Add Default Certificate Authorities for Region
+				if req.Region != nil && ca_metadata.Region == *req.Region {
+					certAuth = append(certAuth, ca)
+				} else if req.Region == nil {
+					// Add All Default Certificate Authorities
+					certAuth = append(certAuth, ca)
+				}
+			}
+		}
+		if len(certAuth) == 0 {
+			return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid default certificate authority"), fmt.Errorf("invalid default certificate authority for environment [%s]", req.Environment))
+		}
 	} else {
 		certAuth = req.CertificateAuthorities
 	}
@@ -274,12 +297,12 @@ func (s *Service) ProvisionServiceAccount(ctx context.Context, req *apiv1.Provis
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	clientToken, err := authentication.GenerateClientToken(32)
+	clientToken, err := lib.GenerateClientToken(32)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
 
-	hashedClientToken, err := authentication.HashPassword(clientToken)
+	hashedClientToken, err := lib.HashPassword(clientToken)
 	if err != nil {
 		return nil, logger.RpcError(status.Error(codes.Internal, "internal server error"), err)
 	}
@@ -380,4 +403,49 @@ func (s *Service) ProvisionServiceAccount(ctx context.Context, req *apiv1.Provis
 	}
 
 	return &response, nil
+}
+
+func (s *Service) CheckSubordinateCaRegion(subordinate_ca string, region *string, environment string, valid_certificate_authorities []string) error {
+	// Service Account Does Not Contain Region Requirements for CA
+	if region == nil {
+		return nil
+	}
+
+	// Get Valid Certificate Authorities for Subordinate CA
+	arg := db.ListValidCertificateAuthorityFromSubordinateCAParams{
+		SubordinateCa: subordinate_ca,
+		Environment:   environment,
+	}
+	certificate_authorities, err := s.store.Reader.ListValidCertificateAuthorityFromSubordinateCA(context.Background(), arg)
+	if err != nil {
+		return fmt.Errorf("error listing valid certificate authority from subordinate ca [%s] %s", subordinate_ca, err)
+	}
+
+	// Generate Map for Certificate Authority Regions for Subordinate CA
+	subordinate_ca_regions := make(map[string]bool)
+	for _, ca := range certificate_authorities {
+		ca_str, ok := ca.(string)
+		if !ok {
+			return fmt.Errorf("certificate authority [%s] is not a string in database", ca)
+		}
+		region := s.acmConfig[ca_str].Region
+		subordinate_ca_regions[region] = true
+	}
+
+	// Subordinate CA Across All Service Accounts Must Be In The Same Region
+	if len(subordinate_ca_regions) != 1 {
+		return fmt.Errorf("multiple regions present for subordinate ca [%s], cannot support region [%s]", subordinate_ca, *region)
+	}
+
+	if !subordinate_ca_regions[*region] {
+		return fmt.Errorf("invalid region [%s] for subordinate ca [%s]", *region, subordinate_ca)
+	}
+
+	// Check Valid Certificate Authorities in Correct Region
+	for _, ca := range valid_certificate_authorities {
+		if s.acmConfig[ca].Region != *region {
+			return fmt.Errorf("invalid region [%s] for certificate authority [%s]", *region, ca)
+		}
+	}
+	return nil
 }

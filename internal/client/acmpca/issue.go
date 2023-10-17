@@ -1,4 +1,4 @@
-package acm_pca
+package acmpca
 
 import (
 	"context"

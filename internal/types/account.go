@@ -1,24 +1,27 @@
 package types
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 )
 
-type ServiceAccount struct {
-	ClientID                    uuid.UUID       `json:"client_id"`
-	ApiToken                    string          `json:"api_token,omitempty" `
-	ServiceAccount              string          `json:"service_account"`
-	Environment                 string          `json:"environment,omitempty"`
-	Team                        string          `json:"team"`
-	Email                       string          `json:"email"`
-	SANRegularExpression        string          `json:"regular_expression,omitempty"`
-	ValidSubjectAlternateName   []string        `json:"valid_subject_alternate_name"`
-	ValidCertificateAuthorities []string        `json:"valid_certificate_authorities"`
-	CertificateValidity         int16           `json:"certificate_validity"`
-	ExtendedKey                 string          `json:"extended_key"`
-	NodeAttestation             NodeAttestation `json:"node_attestation"`
-	CreatedAt                   time.Time       `json:"created_at"`
-	CreatedBy                   uuid.UUID       `json:"created_by"`
+type ServiceAccountPayload struct {
+	ServiceID                   uuid.UUID `json:"service_id"`
+	ServiceAccount              string    `json:"service_account"`
+	Environment                 string    `json:"environment"`
+	ValidSubjectAlternateName   []string  `json:"subject_alternate_name"`
+	ValidCertificateAuthorities []string  `json:"certificate_authorities"`
+	CertificateValidity         int16     `json:"certificate_validity"`
+	SubordinateCa               string    `json:"subordinate_ca"`
+	ExtendedKey                 string    `json:"certificate_request_extension"`
+	SANRegularExpression        string    `json:"regular_expression"`
+}
+
+type ProvisionerAccountPayload struct {
+	ClientId                   uuid.UUID `json:"client_id"`
+	ProvisionerAccount         string    `json:"provisioner_account"`
+	Environments               []string  `json:"environments"`
+	ValidSubjectAlternateNames []string  `json:"subject_alternate_names"`
+	MaxCertificateValidity     uint32    `json:"max_certificate_validity"`
+	ExtendedKeys               []string  `json:"certificate_request_extension"`
+	RegularExpression          string    `json:"regular_expression"`
 }

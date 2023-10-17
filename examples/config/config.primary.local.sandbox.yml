@@ -20,6 +20,7 @@ acm_pca:
     ca_active_day: 90
     assume_role: false
     root_ca: false
+    default: true
 
 firehose:
   stream: baseca-development

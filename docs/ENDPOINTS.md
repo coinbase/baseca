@@ -1115,6 +1115,7 @@ message CreateServiceAccountRequest {
   optional NodeAttestation node_attestation = 9;
   string team = 10;
   string email = 11;
+  optional string region = 12;
 }
 message NodeAttestation {
   AWSInstanceIdentityDocument aws_iid = 1;
@@ -1163,7 +1164,7 @@ message CreateServiceAccountResponse {
     "serviceAccount": "example",
     "environment": "development",
     "subjectAlternativeNames": ["development.coinbase.com"],
-    "certificateAuthorities": ["cb_sandbox_use1_cbhq_net"],
+    "certificateAuthorities": ["sandbox_use1"],
     "extendedKey": "EndEntityServerAuthCertificate",
     "nodeAttestation": {
       "awsIid": {
