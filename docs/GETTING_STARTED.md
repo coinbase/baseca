@@ -340,6 +340,10 @@ func main() {
       SigningAlgorithm:      x509.SHA512WithRSA,
       PublicKeyAlgorithm:    x509.RSA,
       KeySize:               4096,
+      DistinguishedName: baseca.DistinguishedName{
+        Organization: []string{"Coinbase"},
+        // Additional Fields
+      },
       Output: baseca.Output{
         PrivateKey:                   "/tmp/private.key", // baseca Generate Private Key Output Location
         Certificate:                  "/tmp/certificate.crt", // baseca Signed Leaf Certificate Output Location
