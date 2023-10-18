@@ -178,7 +178,7 @@ func TestCreateServiceAccount(t *testing.T) {
 			req: &apiv1.CreateServiceAccountRequest{
 				ServiceAccount:          "example",
 				Environment:             "sandbox",
-				SubjectAlternativeNames: []string{"000.example.com"},
+				SubjectAlternativeNames: []string{"{}.example.com"},
 				ExtendedKey:             "EndEntityServerAuthCertificate",
 				CertificateAuthorities:  []string{"sandbox_use1"},
 				SubordinateCa:           "infrastructure",

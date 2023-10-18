@@ -1,4 +1,4 @@
-.github/
+config/*.yml
 docs/
 examples/
 pkg/
@@ -10,3 +10,4 @@ terraform/
 .dockerignore
 .git
 .gitignore
+.github/
