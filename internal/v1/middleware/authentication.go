@@ -30,16 +30,15 @@ func (m *Middleware) ServerAuthenticationInterceptor(ctx context.Context, req an
 	var ok bool
 
 	methods := map[string]string{
-		"/grpc.health.v1.Health/Check":                            _pass_auth,
-		"/baseca.v1.Account/LoginUser":                            _pass_auth,
-		"/baseca.v1.Account/UpdateUserCredentials":                _pass_auth,
-		"/baseca.v1.Certificate/SignCSR":                          _service_auth,
-		"/baseca.v1.Certificate/OperationsSignCSR":                _provisioner_auth,
-		"/baseca.v1.Certificate/QueryCertificateMetadata":         _provisioner_auth,
-		"/baseca.v1.Certificate/GetSignedIntermediateCertificate": _provisioner_auth,
-		"/baseca.v1.Service/ProvisionServiceAccount":              _provisioner_auth,
-		"/baseca.v1.Service/GetServiceAccountByMetadata":          _provisioner_auth,
-		"/baseca.v1.Service/DeleteProvisionedServiceAccount":      _provisioner_auth,
+		"/grpc.health.v1.Health/Check":                       _pass_auth,
+		"/baseca.v1.Account/LoginUser":                       _pass_auth,
+		"/baseca.v1.Account/UpdateUserCredentials":           _pass_auth,
+		"/baseca.v1.Certificate/SignCSR":                     _service_auth,
+		"/baseca.v1.Certificate/OperationsSignCSR":           _provisioner_auth,
+		"/baseca.v1.Certificate/QueryCertificateMetadata":    _provisioner_auth,
+		"/baseca.v1.Service/ProvisionServiceAccount":         _provisioner_auth,
+		"/baseca.v1.Service/GetServiceAccountByMetadata":     _provisioner_auth,
+		"/baseca.v1.Service/DeleteProvisionedServiceAccount": _provisioner_auth,
 	}
 
 	if auth, ok = methods[info.FullMethod]; !ok {

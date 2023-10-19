@@ -1,12 +1,12 @@
-.github/
+config/*.yml
 docs/
 examples/
 pkg/
 test/
 terraform/
+.github/
 
 *.md
-
 .dockerignore
 .git
 .gitignore

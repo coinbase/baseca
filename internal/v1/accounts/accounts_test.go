@@ -3,12 +3,12 @@ package accounts
 import (
 	mock_store "github.com/coinbase/baseca/db/mock"
 	db "github.com/coinbase/baseca/db/sqlc"
+	"github.com/coinbase/baseca/internal/config"
 	"github.com/coinbase/baseca/internal/lib/util/validator"
-	"github.com/coinbase/baseca/test"
 )
 
 func buildAccountsConfig(store *mock_store.MockStore) (*Service, error) {
-	config, err := test.GetTestConfigurationPath()
+	config, err := config.GetTestConfigurationPath()
 	if err != nil {
 		return nil, err
 	}

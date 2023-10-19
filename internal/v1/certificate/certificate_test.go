@@ -18,8 +18,8 @@ import (
 	acm_pca "github.com/coinbase/baseca/internal/client/acmpca"
 	"github.com/coinbase/baseca/internal/client/firehose"
 	redis_client "github.com/coinbase/baseca/internal/client/redis"
+	"github.com/coinbase/baseca/internal/config"
 	"github.com/coinbase/baseca/internal/lib/util/validator"
-	"github.com/coinbase/baseca/test"
 	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/mock"
 )
@@ -112,7 +112,7 @@ func (m *mockedPrivateCaClient) GetCertificateAuthorityCertificate(ctx context.C
 }
 
 func buildCertificateConfig(store *mock_store.MockStore) (*Certificate, error) {
-	config, err := test.GetTestConfigurationPath()
+	config, err := config.GetTestConfigurationPath()
 	if err != nil {
 		return nil, err
 	}

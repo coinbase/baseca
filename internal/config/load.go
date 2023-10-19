@@ -3,11 +3,18 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+)
+
+const (
+	configuration = "config.test.local.sandbox.yml"
 )
 
 type configProvider struct {
@@ -69,4 +76,49 @@ func (cp *configProvider) Get(path string, cfg any) error {
 
 func (cp *configProvider) Exists(path string) bool {
 	return cp.v.Get(path) != nil
+}
+
+func GetTestConfigurationPath() (*Config, error) {
+	_, filename, _, ok := runtime.Caller(0)
+	if !ok {
+		fmt.Println("Error: Unable to get current file path")
+	}
+
+	baseDir := filepath.Dir(filename)
+	for {
+		if _, err := os.Stat(filepath.Join(baseDir, "go.mod")); err == nil {
+			break
+		}
+
+		parentDir := filepath.Dir(baseDir)
+		if parentDir == baseDir {
+			fmt.Println("Error: Unable to find base directory")
+			break
+		}
+
+		baseDir = parentDir
+	}
+
+	path := fmt.Sprintf("%s/config/%s", baseDir, configuration)
+	config, err := provideConfig(path)
+	if err != nil {
+		return nil, err
+	}
+	return config, nil
+}
+
+func provideConfig(path string) (*Config, error) {
+	ctxLogger := logger.ContextLogger{Logger: logger.DefaultLogger}
+
+	v, err := BuildViper(path)
+	if err != nil {
+		ctxLogger.Error(err.Error())
+	}
+
+	config, err := LoadConfig(v)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, err
 }
