@@ -6,8 +6,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/kms"
 	mock_store "github.com/coinbase/baseca/db/mock"
 	db "github.com/coinbase/baseca/db/sqlc"
+	"github.com/coinbase/baseca/internal/config"
 	lib "github.com/coinbase/baseca/internal/lib/authentication"
-	"github.com/coinbase/baseca/test"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -26,7 +26,7 @@ func (m *mockedKmsClient) Verify(ctx context.Context, params *kms.VerifyInput, o
 }
 
 func buildUsersConfig(store *mock_store.MockStore) (*User, error) {
-	config, err := test.GetTestConfigurationPath()
+	config, err := config.GetTestConfigurationPath()
 	if err != nil {
 		return nil, err
 	}

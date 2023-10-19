@@ -5,9 +5,10 @@ import (
 
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 	"github.com/coinbase/baseca/pkg/types"
+	"github.com/coinbase/baseca/pkg/util"
 )
 
-func (c *client) ProvisionIssueCertificate(certificateRequest CertificateRequest, ca *apiv1.CertificateAuthorityParameter, service, environment, extendedKey string) (*apiv1.SignedCertificate, error) {
+func (c *Client) ProvisionIssueCertificate(certificateRequest CertificateRequest, ca *apiv1.CertificateAuthorityParameter, service, environment, extendedKey string) (*apiv1.SignedCertificate, error) {
 	signingRequest, err := GenerateCSR(certificateRequest)
 	if err != nil {
 		return nil, err
@@ -26,7 +27,7 @@ func (c *client) ProvisionIssueCertificate(certificateRequest CertificateRequest
 		return nil, err
 	}
 
-	err = parseCertificateFormat(signedCertificate, types.SignedCertificate{
+	err = util.ParseCertificateFormat(signedCertificate, types.SignedCertificate{
 		CertificatePath:                  certificateRequest.Output.Certificate,
 		IntermediateCertificateChainPath: certificateRequest.Output.IntermediateCertificateChain,
 		RootCertificateChainPath:         certificateRequest.Output.RootCertificateChain,
@@ -37,12 +38,4 @@ func (c *client) ProvisionIssueCertificate(certificateRequest CertificateRequest
 	}
 
 	return signedCertificate, nil
-}
-
-func (c *client) ProvisionServiceAccount(req *apiv1.ProvisionServiceAccountRequest) (*apiv1.ProvisionServiceAccountResponse, error) {
-	return c.Service.ProvisionServiceAccount(context.Background(), req)
-}
-
-func (c *client) GetServiceAccountByMetadata(req *apiv1.GetServiceAccountMetadataRequest) (*apiv1.ServiceAccounts, error) {
-	return c.Service.GetServiceAccountMetadata(context.Background(), req)
 }

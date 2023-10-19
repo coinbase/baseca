@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	_dns_regular_expression = `^[a-zA-Z*.]+$`
+	_dns_regular_expression = `^[a-zA-Z0-9*._-]+$`
 )
 
 var valid_domains []string

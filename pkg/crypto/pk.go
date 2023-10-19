@@ -1,4 +1,4 @@
-package certificate
+package crypto
 
 import (
 	"crypto"
@@ -59,6 +59,10 @@ func (key *ECDSA) Sign(data []byte) ([]byte, error) {
 }
 
 func ReturnPrivateKey(key AsymmetricKey) (interface{}, error) {
+	if key == nil {
+		return nil, fmt.Errorf("asymmetric key is nil")
+	}
+
 	switch k := key.KeyPair().(type) {
 	case *RSA:
 		return k.PrivateKey, nil

@@ -172,7 +172,7 @@ Run the `baseca` Container
 
 ```sh
 docker run -p 9090:9090 -e database_credentials=secret -v ~/.aws/:/home/baseca/.aws/:ro \
-  -v /path/to/baseca/config:/home/baseca/config ghcr.io/coinbase/baseca:VERSION_SHA
+  -v /path/to/local/baseca/config:/home/baseca/config ghcr.io/coinbase/baseca:VERSION_SHA
 ```
 
 ### 3b. Compile `baseca` as Executable (Option B)
@@ -340,6 +340,10 @@ func main() {
       SigningAlgorithm:      x509.SHA512WithRSA,
       PublicKeyAlgorithm:    x509.RSA,
       KeySize:               4096,
+      DistinguishedName: baseca.DistinguishedName{
+        Organization: []string{"Coinbase"},
+        // Additional Fields
+      },
       Output: baseca.Output{
         PrivateKey:                   "/tmp/private.key", // baseca Generate Private Key Output Location
         Certificate:                  "/tmp/certificate.crt", // baseca Signed Leaf Certificate Output Location
