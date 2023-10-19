@@ -1,21 +1,20 @@
-<h3 align="center">
-   coinbase/baseca
-</h3>
-
 [![Go Report Card](https://goreportcard.com/badge/github.com/coinbase/baseca)](https://goreportcard.com/report/github.com/coinbase/baseca) [![PR Build](https://github.com/coinbase/baseca/actions/workflows/pr_build.yml/badge.svg)](https://github.com/coinbase/baseca/actions/workflows/pr_build.yml) [![Release Build](https://github.com/coinbase/baseca/actions/workflows/release_build.yml/badge.svg)](https://github.com/coinbase/baseca/actions/workflows/release_build.yml)
+
+<img src="docs/images/baseca.png" width="20%" height="20%" />
 
 ## Overview
 
-`baseca` is a `gRPC` service that serves as a Public Key Infrastructure (PKI) control plane intended to provide a safe and scalable approach to issue short-lived end-entities certificates.
+`baseca` is a `gRPC` service that serves as a Public Key Infrastructure (PKI) control plane that issues short-lived x.509 certificates at runtime using attestation.
 
 ### Use Cases
 
-`baseca` extends the `pathlen` constraint from AWS Private CA and acts as an Intermediate CA; instead of issuing leaf certificates directly from Private CA, `baseca` manages many Subordinate CAs and signs requests in-memory depending on the [`scope`](docs/SCOPE.md) of the service account.
+`baseca` integrates with AWS Private CA and becomes as a management layer and a Certificate Authority; instead of issuing leaf certificates directly from Private CA, `baseca` issues and manages Subordinate Certificate Authorities from upstream used to sign requests depending on the [`scope`](docs/SCOPE.md) of a service account.
 
 - Client Authentication
 - Server Authentication
 - Code Signing
-- SSH Certificates (Pending)
+
+<img src="docs/images/architecture.png" width="75%" height="75%" />
 
 ### Running `baseca`
 
@@ -27,8 +26,7 @@
 ### Benefits
 
 - Short-Lived Certificates with Ephemeral Private Key Material
-- No Quotas on Quantity of Issued Certificates
-- Supports Issuance from On-Prem and Multi-Cloud
+- No Limits on Number of Issued Certificates
 - Protects Issuance of Certificates on Scope
 - Supports Node Attestation
-- Cost Savings
+- Supports Issuance from On-Prem and Multi-Cloud
