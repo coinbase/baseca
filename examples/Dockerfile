@@ -1,4 +1,4 @@
-FROM ghcr.io/coinbase/baseca:sha-xxxxx
+FROM ghcr.io/coinbase/baseca:latest
 
 COPY ./config /home/baseca/config
 USER baseca
