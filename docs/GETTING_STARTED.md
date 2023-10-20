@@ -29,14 +29,22 @@
 
 Each organization will have different Public Key Infrastructure topologies depending on its needs; for your PKI to be compatible with `baseca` (a) Certificate Authorities must be AWS Private CA and (b) there must be a minimum [PathLen](https://docs.aws.amazon.com/privateca/latest/userguide/PcaTerms.html#terms-pathlength) depending on where `baseca` issues the Subordinate CA from. Designing a Public Key Infrastructure is out of scope of this document, but we will take a look at topologies that `baseca` is compatible with below:
 
-- Option 1: Root CA (Self-Managed) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Higher Complexity, Recommended)
+- Option 1: Root CA Per Environment (Self-Managed) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Highest Complexity, Recommended)
 
-- Option 2: Root CA (AWS) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Lower Complexity, Recommended)
+  <img src="images/public_key_infrastructure_option_1.png" width="70%" height="70%" />
 
-- Option 3: Root CA (AWS) &rarr; No AWS Intermediate CA: Minimum PathLen1 on Root CA (Not Recommended)
+- Option 2: Root CA (Self-Managed) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Higher Complexity, Recommended)
 
-_PKI Architecture Example: Option 1_
-<img src="images/public_key_infrastructure.png" width="100%" height="100%" />
+  <img src="images/public_key_infrastructure_option_2.png" width="70%" height="70%" />
+
+- Option 3: Root CA (AWS) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Lower Complexity, Recommended)
+
+  <img src="images/public_key_infrastructure_option_3.png" width="70%" height="70%" />
+
+- Option 4: Root CA (AWS) &rarr; No AWS Intermediate CA: Minimum PathLen1 on Root CA (Not Recommended)
+_Note: If this approach is used onle a single environment can be supported._
+
+  <img src="images/public_key_infrastructure_option_4.png" width="20%" height="20%" />
 
 ## Build Infrastructure
 
@@ -57,6 +65,8 @@ tfenv use 1.4.2
 **DISCLAIMER**: `DO NOT` use Private CA(s) that are used within your organization's `PRODUCTION` environment for this `GETTING_STARTED.md` document, this is meant to build a local development environment. For production deployments please refer to [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md).
 
 ```sh
+# /path/to/baseca/terraform/development/baseca.tf
+
 module "baseca" {
   source      = "./baseca"
   service     = "baseca"
@@ -148,7 +158,26 @@ VALUES (uuid_generate_v4(), 'example@example.com', crypt('ADMIN_CREDENTIALS', ge
 docker exec -it baseca psql -U root -d baseca -a -f db/init/init-docker.sql
 ```
 
-### 3a. Run baseca as Container (Option A)
+### 3a. Run baseca as One-Off Execution (Local Development)
+
+_This step is recommended for local testing and getting `baseca` running most quickly._
+
+Update the configuration file `config.primary.local.sandbox.yml`
+
+```yml
+# Update config.primary.local.sandbox.yml
+database_endpoint: localhost
+database_reader_endpoint: localhost
+ssl_mode: disable
+```
+
+Start the Golang `baseca` gRPC Server
+
+```sh
+database_credentials=secret go run cmd/baseca/server.go
+```
+
+### 3b. Run baseca as Container (Production Deployment)
 
 _This step is recommended for production deployments using the standard Dockerfile that is provided for baseca._
 
@@ -175,7 +204,7 @@ docker run -p 9090:9090 -e database_credentials=secret -v ~/.aws/:/home/baseca/.
   -v /path/to/local/baseca/config:/home/baseca/config ghcr.io/coinbase/baseca:VERSION_SHA
 ```
 
-### 3b. Compile `baseca` as Executable (Option B)
+### 3c. Compile `baseca` as Executable (Custom Production Build)
 
 _This step is recommended for users that may want build the binary and then deploy their own custom container._
 
@@ -200,25 +229,6 @@ GOOS=linux GOARCH=amd64 go build -o target/bin/linux/baseca cmd/baseca/server.go
 database_credentials=secret ./target/bin/linux/baseca
 ```
 
-### 3c. Run baseca as One-Off Execution (Option C)
-
-_This step is recommended for local testing and getting `baseca` running most quickly._
-
-Update the configuration file `config.primary.local.sandbox.yml`
-
-```yml
-# Update config.primary.local.sandbox.yml
-database_endpoint: localhost
-database_reader_endpoint: localhost
-ssl_mode: disable
-```
-
-Start the Golang `baseca` gRPC Server
-
-```sh
-database_credentials=secret go run cmd/baseca/server.go
-```
-
 ## Signing x.509 Certificate
 
 Start the `baseca` gRPC server via the preferred method within the [Local Deployment](#local-deployment) section and then run the [`baseca.v1.Account/LoginUser`](ENDPOINTS.md#basecav1accountloginuser) RPC method.
@@ -230,8 +240,8 @@ Authenticate with the `ADMIN` user created from the [`Create Initial Admin User`
 ```sh
 grpcurl -vv -plaintext \
   -d '{
-    "username": "[USERNAME]",
-    "password": "[PASSWORD]"
+    "username": "example@example.com",
+    "password": "ADMIN_CREDENTIALS"
     }' \
   localhost:9090 baseca.v1.Account/LoginUser
 
