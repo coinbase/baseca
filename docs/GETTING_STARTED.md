@@ -29,21 +29,21 @@
 
 Each organization will have different Public Key Infrastructure topologies depending on its needs; for your PKI to be compatible with `baseca` (a) Certificate Authorities must be AWS Private CA and (b) there must be a minimum [PathLen](https://docs.aws.amazon.com/privateca/latest/userguide/PcaTerms.html#terms-pathlength) depending on where `baseca` issues the Subordinate CA from. Designing a Public Key Infrastructure is out of scope of this document, but we will take a look at topologies that `baseca` is compatible with below:
 
-- Option 1: Root CA Per Environment (Self-Managed) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Highest Complexity, Recommended)
+- **Option 1:** Root CA Per Environment (Self-Managed) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Highest Complexity, Recommended)
 
   <img src="images/public_key_infrastructure_option_1.png" width="70%" height="70%" />
 
-- Option 2: Root CA (Self-Managed) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Higher Complexity, Recommended)
+- **Option 2:** Root CA (Self-Managed) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Higher Complexity, Recommended)
 
   <img src="images/public_key_infrastructure_option_2.png" width="70%" height="70%" />
 
-- Option 3: Root CA (AWS) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Lower Complexity, Recommended)
+- **Option 3:** Root CA (AWS) &rarr; Intermediate CA (AWS): Minimum PathLen2 on Root CA, PathLen1 on Intermediate CA (Lower Complexity, Recommended)
 
   <img src="images/public_key_infrastructure_option_3.png" width="70%" height="70%" />
 
-- Option 4: Root CA (AWS) &rarr; No AWS Intermediate CA: Minimum PathLen1 on Root CA (Not Recommended)
+- **Option 4:** Root CA (AWS) &rarr; No AWS Intermediate CA: Minimum PathLen1 on Root CA (Not Recommended)
 
-_Note: If this approach is used onle a single environment can be supported._
+  _Note: If this approach is used onle a single environment can be supported._
 
   <img src="images/public_key_infrastructure_option_4.png" width="20%" height="20%" />
 
