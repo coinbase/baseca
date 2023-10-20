@@ -43,7 +43,7 @@ Each organization will have different Public Key Infrastructure topologies depen
 
 - **Option 4:** Root CA (AWS) &rarr; No AWS Intermediate CA: Minimum PathLen1 on Root CA (Not Recommended)
 
-  _Note: If this approach is used onle a single environment can be supported._
+  _Note: If this approach is used onlt a single environment can be supported._
 
   <img src="images/public_key_infrastructure_option_4.png" width="20%" height="20%" />
 
