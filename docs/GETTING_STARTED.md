@@ -15,9 +15,9 @@
 
 `baseca` gRPC Server:
 
-- Option 1: [Build and Run baseca as Container](#3a-run-baseca-as-container-option-a)
-- Option 2: [Compile baseca as Executable (amd64)](#3b-compile-baseca-as-executable-option-b)
-- Option 3: [Run baseca as One-Off Execution](#3c-run-baseca-as-one-off-execution-option-c)
+- Option 1: [Build and Run baseca as Container](#3a-run-baseca-as-one-off-execution-local-development)
+- Option 2: [Compile baseca as Executable (amd64)](#3b-run-baseca-as-container-production-deployment)
+- Option 3: [Run baseca as One-Off Execution](#3c-compile-baseca-as-executable-custom-production-build)
 
 `Signing` x.509 Certificate:
 
@@ -43,7 +43,7 @@ Each organization will have different Public Key Infrastructure topologies depen
 
 - **Option 4:** Root CA (AWS) &rarr; No AWS Intermediate CA: Minimum PathLen1 on Root CA (Not Recommended)
 
-  _Note: If this approach is used onlt a single environment can be supported._
+_Note: If this approach is used onle a single environment can be supported._
 
   <img src="images/public_key_infrastructure_option_4.png" width="20%" height="20%" />
 
