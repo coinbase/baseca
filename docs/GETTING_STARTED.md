@@ -15,9 +15,9 @@
 
 `baseca` gRPC Server:
 
-- Option 1: [Build and Run baseca as Container](#3a-run-baseca-as-one-off-execution-local-development)
-- Option 2: [Compile baseca as Executable (amd64)](#3b-run-baseca-as-container-production-deployment)
-- Option 3: [Run baseca as One-Off Execution](#3c-compile-baseca-as-executable-custom-production-build)
+- Option 1: [Run baseca as One-Off Execution](#3a-run-baseca-as-one-off-execution-local-development)
+- Option 2: [Build and Run baseca as Container](#3b-run-baseca-as-container-production-deployment)
+- Option 3: [Compile baseca as Executable (amd64)](#3c-compile-baseca-as-executable-custom-production-build)
 
 `Signing` x.509 Certificate:
 
