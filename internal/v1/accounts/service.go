@@ -70,8 +70,8 @@ func (s *Service) CreateServiceAccount(ctx context.Context, req *apiv1.CreateSer
 	}
 
 	// Production Service Accounts Require Attestation
-	if req.Environment == _production || req.NodeAttestation != nil {
-		if err = validateNodeAttestation(req.NodeAttestation); err != nil {
+	if req.Environment == types.Production.String() || req.NodeAttestation != nil {
+		if err = verifyNodeAttestationParameters(req.NodeAttestation); err != nil {
 			return nil, logger.RpcError(status.Error(codes.InvalidArgument, err.Error()), err)
 		}
 	}

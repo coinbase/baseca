@@ -10,12 +10,10 @@ import (
 
 	"github.com/coinbase/baseca/db/mock"
 	db "github.com/coinbase/baseca/db/sqlc"
-	"github.com/coinbase/baseca/internal/lib/crypto"
-	"github.com/coinbase/baseca/internal/types"
+	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
+	c "github.com/coinbase/baseca/pkg/client"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
-
-	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 )
 
 func TestGetCertificate(t *testing.T) {
@@ -82,14 +80,14 @@ func TestOperationsSignCSR(t *testing.T) {
 		{
 			name: "OK_NO_CERTIFICATE_AUTHORITY_INPUT",
 			req: func() *apiv1.OperationsSignRequest {
-				req := types.CertificateRequest{
+				req := c.CertificateRequest{
 					CommonName:            "development.example.com",
 					SubjectAlternateNames: []string{"development.example.com"},
 					SigningAlgorithm:      x509.SHA512WithRSA,
 					PublicKeyAlgorithm:    x509.RSA,
 					KeySize:               2048,
 				}
-				csr, _ := crypto.GenerateCSR(req)
+				csr, _ := c.GenerateCSR(req)
 
 				return &apiv1.OperationsSignRequest{
 					CertificateSigningRequest: csr.CSR.String(),
@@ -140,14 +138,14 @@ func TestOperationsSignCSR(t *testing.T) {
 		{
 			name: "OK_CERTIFICATE_AUTHORITY_INPUT",
 			req: func() *apiv1.OperationsSignRequest {
-				req := types.CertificateRequest{
+				req := c.CertificateRequest{
 					CommonName:            "development.example.com",
 					SubjectAlternateNames: []string{"development.example.com"},
 					SigningAlgorithm:      x509.SHA512WithRSA,
 					PublicKeyAlgorithm:    x509.RSA,
 					KeySize:               2048,
 				}
-				csr, _ := crypto.GenerateCSR(req)
+				csr, _ := c.GenerateCSR(req)
 
 				caParameter := &apiv1.CertificateAuthorityParameter{
 					Region:        "us-east-1",

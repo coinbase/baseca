@@ -35,7 +35,7 @@ func (r *SigningRequestGeneratorRSA) Generate() (crypto.PrivateKey, error) {
 }
 
 func (r *SigningRequestGeneratorRSA) KeyType() string {
-	return "RSA PRIVATE KEY"
+	return types.RSA_PRIVATE_KEY.String()
 }
 
 func (r *SigningRequestGeneratorRSA) MarshalPrivateKey(key crypto.PrivateKey) ([]byte, error) {
@@ -47,18 +47,18 @@ func (r *SigningRequestGeneratorRSA) SupportsPublicKeyAlgorithm(algorithm x509.P
 }
 
 func (r *SigningRequestGeneratorRSA) SupportsSigningAlgorithm(algorithm x509.SignatureAlgorithm) bool {
-	_, ok := types.PublicKeyAlgorithms["RSA"].SigningAlgorithm[algorithm]
+	_, ok := types.PublicKeyAlgorithms[types.RSA].SigningAlgorithm[algorithm]
 	return ok
 }
 
 func (r *SigningRequestGeneratorRSA) SupportsKeySize(size int) bool {
-	_, ok := types.PublicKeyAlgorithms["RSA"].KeySize[size]
+	_, ok := types.PublicKeyAlgorithms[types.RSA].KeySize[size]
 	return ok
 }
 
 // ECDSA Interface
 func (e *SigningRequestGeneratorECDSA) Generate() (crypto.PrivateKey, error) {
-	c, ok := types.PublicKeyAlgorithms["ECDSA"].KeySize[e.Curve]
+	c, ok := types.PublicKeyAlgorithms[types.ECDSA].KeySize[e.Curve]
 
 	if !ok {
 		return nil, fmt.Errorf("ecdsa curve [%d] not supported", e.Curve)
@@ -73,7 +73,7 @@ func (e *SigningRequestGeneratorECDSA) Generate() (crypto.PrivateKey, error) {
 }
 
 func (e *SigningRequestGeneratorECDSA) KeyType() string {
-	return "EC PRIVATE KEY"
+	return types.ECDSA_PRIVATE_KEY.String()
 }
 
 func (e *SigningRequestGeneratorECDSA) MarshalPrivateKey(key crypto.PrivateKey) ([]byte, error) {
@@ -85,11 +85,11 @@ func (e *SigningRequestGeneratorECDSA) SupportsPublicKeyAlgorithm(algorithm x509
 }
 
 func (e *SigningRequestGeneratorECDSA) SupportsSigningAlgorithm(algorithm x509.SignatureAlgorithm) bool {
-	_, ok := types.PublicKeyAlgorithms["ECDSA"].SigningAlgorithm[algorithm]
+	_, ok := types.PublicKeyAlgorithms[types.ECDSA].SigningAlgorithm[algorithm]
 	return ok
 }
 
 func (e *SigningRequestGeneratorECDSA) SupportsKeySize(size int) bool {
-	_, ok := types.PublicKeyAlgorithms["ECDSA"].KeySize[size]
+	_, ok := types.PublicKeyAlgorithms[types.ECDSA].KeySize[size]
 	return ok
 }

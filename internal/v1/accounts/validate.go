@@ -136,7 +136,7 @@ func (s *Service) validateSanInputProvisionerAccount(ctx context.Context, provis
 }
 
 func (s *Service) validateCertificateParameters(certificateAuthorities []string, environment string, certificateValidity int16, subordinateCa string) error {
-	if _, ok := validator.CertificateAuthorityEnvironments[environment]; !ok {
+	if _, ok := validator.CertificateAuthorityEnvironmentsString[environment]; !ok {
 		return fmt.Errorf("invalid environment [%s]", environment)
 	}
 
@@ -165,7 +165,7 @@ func (s *Service) validateCertificateParameters(certificateAuthorities []string,
 	return nil
 }
 
-func validateNodeAttestation(attestation *apiv1.NodeAttestation) error {
+func verifyNodeAttestationParameters(attestation *apiv1.NodeAttestation) error {
 	if attestation == nil {
 		return fmt.Errorf("node_attestation cannot be empty")
 	}

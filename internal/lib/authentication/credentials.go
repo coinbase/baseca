@@ -9,7 +9,7 @@ import (
 )
 
 func HashPassword(password string) (string, error) {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 15)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), 10)
 	if err != nil {
 		return "", fmt.Errorf("failed to hash password %w", err)
 	}

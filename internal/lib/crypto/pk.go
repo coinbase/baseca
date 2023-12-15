@@ -1,13 +1,8 @@
 package crypto
 
 import (
-	"crypto"
-	"crypto/ecdsa"
-	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -15,54 +10,6 @@ import (
 
 	"github.com/coinbase/baseca/internal/types"
 )
-
-type RSA struct {
-	PublicKey  *rsa.PublicKey
-	PrivateKey *rsa.PrivateKey
-}
-
-type ECDSA struct {
-	PublicKey  *ecdsa.PublicKey
-	PrivateKey *ecdsa.PrivateKey
-}
-
-func (key *RSA) KeyPair() any {
-	return key
-}
-
-func (key *RSA) Sign(data []byte) ([]byte, error) {
-	h := crypto.SHA256.New()
-	h.Write(data)
-	hashed := h.Sum(nil)
-	return rsa.SignPKCS1v15(rand.Reader, key.PrivateKey, crypto.SHA256, hashed)
-}
-
-func (key *ECDSA) KeyPair() any {
-	return key
-}
-
-func (key *ECDSA) Sign(data []byte) ([]byte, error) {
-	h := crypto.SHA256.New()
-	h.Write(data)
-	hashed := h.Sum(nil)
-	r, s, err := ecdsa.Sign(rand.Reader, key.PrivateKey, hashed)
-	if err != nil {
-		return nil, err
-	}
-	signature := append(r.Bytes(), s.Bytes()...)
-	return signature, nil
-}
-
-func ReturnPrivateKey(key types.AsymmetricKey) (any, error) {
-	switch k := key.KeyPair().(type) {
-	case *RSA:
-		return k.PrivateKey, nil
-	case *ECDSA:
-		return k.PrivateKey, nil
-	default:
-		return nil, fmt.Errorf("unsupported key type")
-	}
-}
 
 func GetSubordinateCaParameters(service string) (*types.CertificateAuthority, error) {
 	subordinatePath := filepath.Join(types.SubordinatePath, service+_subordinateCertificate)
@@ -92,11 +39,6 @@ func GetSubordinateCaParameters(service string) (*types.CertificateAuthority, er
 		return nil, fmt.Errorf("error decoding private key")
 	}
 
-	subordinatePrivateKey, err := formatAsymmetricKey(pkPem)
-	if err != nil {
-		return nil, fmt.Errorf("error formatting private key: %w", err)
-	}
-
 	serialNumberPath := filepath.Join(types.SubordinatePath, service+_subordinateSerialNumber)
 	caSerialNumber, err := readFileFromSystem(serialNumberPath)
 	if err != nil {
@@ -111,7 +53,7 @@ func GetSubordinateCaParameters(service string) (*types.CertificateAuthority, er
 
 	return &types.CertificateAuthority{
 		Certificate:             subordinateCertificate,
-		AsymmetricKey:           &subordinatePrivateKey,
+		PrivateKey:              pkPem,
 		SerialNumber:            string(*caSerialNumber),
 		CertificateAuthorityArn: string(*caArn),
 	}, nil
@@ -138,47 +80,4 @@ func writeFileToSystem(path string, data []byte) error {
 		return err
 	}
 	return nil
-}
-
-func formatAsymmetricKey(block *pem.Block) (types.AsymmetricKey, error) {
-	switch block.Type {
-	case "RSA PRIVATE KEY":
-		rsaKey, err := parseRSAPrivateKey(block.Bytes)
-		if err != nil {
-			return nil, err
-		}
-		return rsaKey, nil
-	case "EC PRIVATE KEY":
-		ecdsaKey, err := parseECDSAPrivateKey(block.Bytes)
-		if err != nil {
-			return nil, err
-		}
-		return ecdsaKey, nil
-	default:
-		return nil, errors.New("unsupported key type")
-	}
-}
-
-func parseRSAPrivateKey(keyBytes []byte) (*RSA, error) {
-	key, err := x509.ParsePKCS1PrivateKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}
-	rsaPrivateKey := &RSA{
-		PublicKey:  &key.PublicKey,
-		PrivateKey: key,
-	}
-	return rsaPrivateKey, nil
-}
-
-func parseECDSAPrivateKey(keyBytes []byte) (*ECDSA, error) {
-	key, err := x509.ParseECPrivateKey(keyBytes)
-	if err != nil {
-		return nil, err
-	}
-	ecdsaPrivateKey := &ECDSA{
-		PublicKey:  &key.PublicKey,
-		PrivateKey: key,
-	}
-	return ecdsaPrivateKey, nil
 }

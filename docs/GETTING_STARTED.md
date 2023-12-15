@@ -221,13 +221,11 @@ ssl_mode: disable
 Compile the Golang Binary `baseca`
 
 ```sh
-# Darwin AMD64
-GOOS=darwin GOARCH=amd64 go build -o target/bin/darwin/baseca cmd/baseca/server.go
-database_credentials=secret ./target/bin/darwin/baseca
+cd /path/to/baseca
+make build
 
-# Linux AMD64
-GOOS=linux GOARCH=amd64 go build -o target/bin/linux/baseca cmd/baseca/server.go
-database_credentials=secret ./target/bin/linux/baseca
+# Update Path Based on AMD64 or ARM64 Architecture
+database_credentials=secret ./target/bin/arm64/baseca
 ```
 
 ## Signing x.509 Certificate

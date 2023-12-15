@@ -2,10 +2,8 @@ package baseca
 
 import (
 	"context"
-	"crypto"
-	"crypto/rand"
+	"crypto/ecdsa"
 	"crypto/rsa"
-	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -14,11 +12,17 @@ import (
 	"path/filepath"
 
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
+	"github.com/coinbase/baseca/pkg/crypto"
 	"github.com/coinbase/baseca/pkg/types"
-	"github.com/coinbase/baseca/pkg/util"
 )
 
-func (c *Client) GenerateSignature(csr CertificateRequest, element []byte) (*[]byte, []*x509.Certificate, error) {
+var _buffer = 1024
+
+type Signer interface {
+	Sign(data []byte) ([]byte, error)
+}
+
+func (c *Client) GenerateSignature(csr CertificateRequest, data *[]byte) (*[]byte, []*x509.Certificate, error) {
 	var certificatePem []*pem.Block
 	var certificateChain []*x509.Certificate
 
@@ -36,25 +40,23 @@ func (c *Client) GenerateSignature(csr CertificateRequest, element []byte) (*[]b
 		return nil, nil, err
 	}
 
-	err = util.ParseCertificateFormat(signedCertificate, types.SignedCertificate{
+	err = ParseCertificateFormat(signedCertificate, types.SignedCertificate{
 		CertificatePath:                  csr.Output.Certificate,
 		IntermediateCertificateChainPath: csr.Output.IntermediateCertificateChain,
 		RootCertificateChainPath:         csr.Output.RootCertificateChain,
 	})
-
 	if err != nil {
 		return nil, nil, err
 	}
 
-	hashedOutput := sha256.Sum256(element)
-	pk, err := x509.ParsePKCS1PrivateKey(signingRequest.PrivateKey.Bytes)
+	signer, err := parsePrivateKey(signingRequest.EncodedPKCS8, csr.SigningAlgorithm)
 	if err != nil {
-		return nil, nil, errors.New("error parsing pkcs1 private key")
+		return nil, nil, err
 	}
 
-	signature, err := rsa.SignPKCS1v15(rand.Reader, pk, crypto.SHA256, hashedOutput[:])
+	signature, err := signer.Sign(*data)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error calculating signature of hash using pkcs1: %s", err)
+		return nil, nil, fmt.Errorf("error signing data: %w", err)
 	}
 
 	fullChain, err := os.ReadFile(filepath.Clean(csr.Output.RootCertificateChain))
@@ -84,49 +86,35 @@ func (c *Client) GenerateSignature(csr CertificateRequest, element []byte) (*[]b
 	return &signature, certificateChain, nil
 }
 
-func (c *Client) ValidateSignature(tc types.TrustChain, manifest types.Manifest) error {
-	err := manifest.CertificateChain[0].CheckSignature(manifest.SigningAlgorithm, manifest.Data, manifest.Signature)
+func parsePrivateKey(pk []byte, signatureAlgorithm x509.SignatureAlgorithm) (Signer, error) {
+	block, _ := pem.Decode(pk)
+	if block == nil {
+		return nil, errors.New("error parsing pem block from private key")
+	}
+
+	privateKey, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 	if err != nil {
-		return fmt.Errorf("signature verification failed: %s", err)
+		return nil, fmt.Errorf("error parsing pkcs8 private key: %s", err)
 	}
 
-	// Validate Entire Certificate Chain Does Not Break
-	for i := range manifest.CertificateChain[:len(manifest.CertificateChain)-1] {
-		err = manifest.CertificateChain[i].CheckSignatureFrom(manifest.CertificateChain[i+1])
-		if err != nil {
-			return fmt.Errorf("certificate chain invalid: %s", err)
-		}
+	// Validate Signing Algorithm is Supported
+	algorithm, exist := types.SignatureAlgorithm[signatureAlgorithm]
+	if !exist {
+		return nil, fmt.Errorf("invalid signing algorithm: %s", signatureAlgorithm)
 	}
 
-	if manifest.CertificateChain[0].Subject.CommonName != tc.CommonName {
-		return fmt.Errorf("invalid common name (cn) from code signing certificate")
+	switch key := privateKey.(type) {
+	case *rsa.PrivateKey:
+		return &crypto.RSASigner{
+			PrivateKey:         key,
+			SignatureAlgorithm: signatureAlgorithm,
+			Hash:               algorithm}, nil
+	case *ecdsa.PrivateKey:
+		return &crypto.ECDSASigner{
+			PrivateKey:         key,
+			SignatureAlgorithm: signatureAlgorithm,
+			Hash:               algorithm}, nil
+	default:
+		return nil, errors.New("unsupported private key type")
 	}
-
-	validSubjectAlternativeName := false
-	if len(manifest.CertificateChain[0].DNSNames) > 0 {
-		for _, san := range manifest.CertificateChain[0].DNSNames {
-			if san == tc.CommonName {
-				validSubjectAlternativeName = true
-			}
-		}
-	}
-
-	if !validSubjectAlternativeName {
-		return fmt.Errorf("invalid subject alternative name (san) from code signing certificate")
-	}
-
-	rootCertificatePool, err := util.GenerateCertificatePool(tc)
-	if err != nil {
-		return err
-	}
-
-	opts := x509.VerifyOptions{
-		Roots:     rootCertificatePool,
-		KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageCodeSigning},
-	}
-	_, err = manifest.CertificateChain[1].Verify(opts)
-	if err != nil {
-		return fmt.Errorf("error validating code signing certificate validity: %s", err)
-	}
-	return nil
 }

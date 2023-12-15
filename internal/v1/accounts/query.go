@@ -118,7 +118,7 @@ func (s *Service) GetProvisionerAccount(ctx context.Context, req *apiv1.AccountI
 func (s *Service) transformServiceAccount(ctx context.Context, account *db.Account) (*apiv1.ServiceAccount, error) {
 	var attestation types.NodeAttestation
 
-	if validator.Contains(account.NodeAttestation, types.Attestation.AWS_IID) {
+	if validator.Contains(account.NodeAttestation, types.AWS_IID.String()) {
 		iid, err := s.store.Reader.GetInstanceIdentityDocument(ctx, account.ClientID)
 		if err != nil {
 			return nil, err
@@ -131,7 +131,7 @@ func (s *Service) transformServiceAccount(ctx context.Context, account *db.Accou
 
 		// TODO: Update awsIid {} Response
 		attestation = types.NodeAttestation{
-			AWSInstanceIdentityDocument: types.AWSInstanceIdentityDocument{
+			EC2NodeAttestation: types.EC2NodeAttestation{
 				RoleArn:        iid.RoleArn.String,
 				AssumeRole:     iid.AssumeRole.String,
 				SecurityGroups: iid.SecurityGroupID,
@@ -160,12 +160,12 @@ func (s *Service) transformServiceAccount(ctx context.Context, account *db.Accou
 		CreatedBy:               account.CreatedBy.String(),
 		NodeAttestation: &apiv1.NodeAttestation{
 			AwsIid: &apiv1.AWSInstanceIdentityDocument{
-				RoleArn:        attestation.AWSInstanceIdentityDocument.RoleArn,
-				AssumeRole:     attestation.AWSInstanceIdentityDocument.AssumeRole,
-				SecurityGroups: attestation.AWSInstanceIdentityDocument.SecurityGroups,
-				Region:         attestation.AWSInstanceIdentityDocument.Region,
-				InstanceId:     attestation.AWSInstanceIdentityDocument.InstanceID,
-				InstanceTags:   attestation.AWSInstanceIdentityDocument.InstanceTags,
+				RoleArn:        attestation.EC2NodeAttestation.RoleArn,
+				AssumeRole:     attestation.EC2NodeAttestation.AssumeRole,
+				SecurityGroups: attestation.EC2NodeAttestation.SecurityGroups,
+				Region:         attestation.EC2NodeAttestation.Region,
+				InstanceId:     attestation.EC2NodeAttestation.InstanceID,
+				InstanceTags:   attestation.EC2NodeAttestation.InstanceTags,
 			},
 		},
 	}, nil
@@ -174,7 +174,7 @@ func (s *Service) transformServiceAccount(ctx context.Context, account *db.Accou
 func (s *Service) transformProvisionerAccount(ctx context.Context, account *db.Provisioner) (*apiv1.ProvisionerAccount, error) {
 	var attestation types.NodeAttestation
 
-	if validator.Contains(account.NodeAttestation, types.Attestation.AWS_IID) {
+	if validator.Contains(account.NodeAttestation, types.AWS_IID.String()) {
 		iid, err := s.store.Reader.GetInstanceIdentityDocument(ctx, account.ClientID)
 		if err != nil {
 			return nil, err
@@ -187,7 +187,7 @@ func (s *Service) transformProvisionerAccount(ctx context.Context, account *db.P
 
 		// TODO: Update awsIid {} Response
 		attestation = types.NodeAttestation{
-			AWSInstanceIdentityDocument: types.AWSInstanceIdentityDocument{
+			EC2NodeAttestation: types.EC2NodeAttestation{
 				RoleArn:        iid.RoleArn.String,
 				AssumeRole:     iid.AssumeRole.String,
 				SecurityGroups: iid.SecurityGroupID,
@@ -213,12 +213,12 @@ func (s *Service) transformProvisionerAccount(ctx context.Context, account *db.P
 		CreatedBy:               account.CreatedBy.String(),
 		NodeAttestation: &apiv1.NodeAttestation{
 			AwsIid: &apiv1.AWSInstanceIdentityDocument{
-				RoleArn:        attestation.AWSInstanceIdentityDocument.RoleArn,
-				AssumeRole:     attestation.AWSInstanceIdentityDocument.AssumeRole,
-				SecurityGroups: attestation.AWSInstanceIdentityDocument.SecurityGroups,
-				Region:         attestation.AWSInstanceIdentityDocument.Region,
-				InstanceId:     attestation.AWSInstanceIdentityDocument.InstanceID,
-				InstanceTags:   attestation.AWSInstanceIdentityDocument.InstanceTags,
+				RoleArn:        attestation.EC2NodeAttestation.RoleArn,
+				AssumeRole:     attestation.EC2NodeAttestation.AssumeRole,
+				SecurityGroups: attestation.EC2NodeAttestation.SecurityGroups,
+				Region:         attestation.EC2NodeAttestation.Region,
+				InstanceId:     attestation.EC2NodeAttestation.InstanceID,
+				InstanceTags:   attestation.EC2NodeAttestation.InstanceTags,
 			},
 		},
 	}, nil

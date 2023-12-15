@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 	"github.com/coinbase/baseca/pkg/attestor/aws_iid"
@@ -29,6 +30,7 @@ type Client struct {
 	Attestation    string
 	Certificate    apiv1.CertificateClient
 	Service        apiv1.ServiceClient
+	*iidCache
 }
 
 type AccountClient interface {
@@ -143,11 +145,11 @@ func (c *Client) clientAuthUnaryInterceptor(ctx context.Context, method string, 
 	ctx = metadata.AppendToOutgoingContext(ctx, _client_token_header, c.Authentication.ClientToken)
 
 	if c.Attestation == Attestation.AWS {
-		instance_metadata, err := aws_iid.BuildInstanceMetadata()
+		instance_metadata, err := c.iidCache.Get()
 		if err != nil {
-			return fmt.Errorf("error generating aws_iid node attestation")
+			return fmt.Errorf("error generating aws_iid node attestation: %w", err)
 		}
-		ctx = metadata.AppendToOutgoingContext(ctx, _aws_iid_metadata, *instance_metadata)
+		ctx = metadata.AppendToOutgoingContext(ctx, _aws_iid_metadata, instance_metadata)
 	}
 
 	err := invoker(ctx, method, req, reply, cc, opts...)
@@ -159,4 +161,28 @@ func (c *Client) accountAuthUnaryInterceptor(ctx context.Context, method string,
 
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	return err
+}
+
+func (cache *iidCache) Get() (string, error) {
+	cache.lock.Lock()
+	defer cache.lock.Unlock()
+
+	// If we have a cached value and it hasn't expired, use it.
+	if cache.value != "" && cache.expiration.After(time.Now()) {
+		return cache.value, nil
+	}
+
+	// We have no cache or the cache has expired, so refresh it and return that.
+	instance_metadata, err := aws_iid.BuildInstanceMetadata()
+	if err != nil {
+		return "", fmt.Errorf("aws_iid.BuildInstanceMetadata failed: %w", err)
+	}
+
+	if instance_metadata == nil {
+		return "", fmt.Errorf("got nil IID")
+	}
+
+	cache.value = *instance_metadata
+	cache.expiration = time.Now().Add(iidCacheExpiration)
+	return cache.value, nil
 }

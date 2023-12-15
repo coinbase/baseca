@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 
+	"github.com/coinbase/baseca/internal/types"
 	"github.com/google/uuid"
 )
 
@@ -19,7 +20,7 @@ func (store *SQLStore) TxCreateServiceAccount(ctx context.Context, arg CreateSer
 
 		for _, node_attestation := range arg.NodeAttestation {
 			switch node_attestation {
-			case "AWS_IID":
+			case types.AWS_IID.String():
 				// Add to AWS_IID Database
 				_, err = store.StoreInstanceIdentityDocument(ctx, iid)
 				if err != nil {

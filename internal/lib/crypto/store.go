@@ -10,10 +10,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/acmpca"
 	"github.com/coinbase/baseca/internal/types"
+	lib "github.com/coinbase/baseca/pkg/types"
 )
 
-func WriteKeyToFile(service string, privateKey types.AsymmetricKey) error {
-	var pemBlock *pem.Block
+func WriteKeyToFile(service string, privateKey *pem.Block) error {
 	directoryPath := filepath.Join(types.SubordinatePath, service)
 	filePath := filepath.Join(directoryPath, _subordinatePrivateKey)
 
@@ -21,30 +21,9 @@ func WriteKeyToFile(service string, privateKey types.AsymmetricKey) error {
 		return fmt.Errorf("unsafe file input, write private key")
 	}
 
-	switch k := privateKey.KeyPair().(type) {
-	case *RSA:
-		pkBytes := x509.MarshalPKCS1PrivateKey(k.PrivateKey)
-		pemBlock = &pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: pkBytes,
-		}
-	case *ECDSA:
-		pkBytes, err := x509.MarshalECPrivateKey(k.PrivateKey)
-		if err != nil {
-			return err
-		}
-		pemBlock = &pem.Block{
-			Type:  "EC PRIVATE KEY",
-			Bytes: pkBytes,
-		}
-	default:
-		return fmt.Errorf("private key format not supported")
-	}
-
-	if err := os.WriteFile(filePath, pem.EncodeToMemory(pemBlock), os.ModePerm); err != nil {
+	if err := os.WriteFile(filePath, pem.EncodeToMemory(privateKey), os.ModePerm); err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -115,7 +94,7 @@ func encodeCertificateFromString(certificate *string) (*[]byte, error) {
 	}
 	pemBlock := pem.EncodeToMemory(
 		&pem.Block{
-			Type:  "CERTIFICATE",
+			Type:  lib.CERTIFICATE.String(),
 			Bytes: x509Certificate.Raw,
 		},
 	)
@@ -125,7 +104,7 @@ func encodeCertificateFromString(certificate *string) (*[]byte, error) {
 func encodeCertificateFromx509(certificate *x509.Certificate) *[]byte {
 	pemBlock := pem.EncodeToMemory(
 		&pem.Block{
-			Type:  "CERTIFICATE",
+			Type:  lib.CERTIFICATE.String(),
 			Bytes: certificate.Raw,
 		},
 	)

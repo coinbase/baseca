@@ -5,10 +5,8 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/pem"
-	"errors"
 	"fmt"
 
-	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 	"github.com/coinbase/baseca/internal/client/acmpca"
 	"github.com/coinbase/baseca/internal/config"
@@ -17,6 +15,8 @@ import (
 	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/coinbase/baseca/internal/types"
+	baseca "github.com/coinbase/baseca/pkg/client"
+	lib "github.com/coinbase/baseca/pkg/types"
 	"github.com/gogo/status"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -78,9 +78,9 @@ func (c *Certificate) SignCSR(ctx context.Context, req *apiv1.CertificateSigning
 
 }
 
-func (c *Certificate) requestCertificate(ctx context.Context, authPayload *types.ServiceAccountPayload, certificateRequest *x509.CertificateRequest) (*db.CertificateResponseData, error) {
+func (c *Certificate) requestCertificate(ctx context.Context, authPayload *types.ServiceAccountPayload, certificateRequest *x509.CertificateRequest) (*types.CertificateResponseData, error) {
 	var subordinate *types.CertificateAuthority
-	var parameters types.CertificateRequest
+	var parameters baseca.CertificateRequest
 	var csr *bytes.Buffer
 	var err error
 
@@ -103,18 +103,18 @@ func (c *Certificate) requestCertificate(ctx context.Context, authPayload *types
 			return nil, err
 		}
 
-		signingAlgorithm, ok := types.ValidSignatures[c.ca.SigningAlgorithm]
+		signingAlgorithm, ok := lib.ValidSignatures[c.ca.SigningAlgorithm]
 		if !ok {
 			return nil, fmt.Errorf("invalid signing algorithm: %s", c.ca.SigningAlgorithm)
 		}
 
-		parameters = types.CertificateRequest{
+		parameters = baseca.CertificateRequest{
 			CommonName:            intermediateCa,
 			SubjectAlternateNames: []string{intermediateCa},
 			SigningAlgorithm:      signingAlgorithm.Common,
-			PublicKeyAlgorithm:    types.PublicKeyAlgorithms[c.ca.KeyAlgorithm].Algorithm,
+			PublicKeyAlgorithm:    lib.PublicKeyAlgorithmStrings[c.ca.KeyAlgorithm].Algorithm,
 			KeySize:               c.ca.KeySize,
-			DistinguishedName: types.DistinguishedName{
+			DistinguishedName: baseca.DistinguishedName{
 				Country:            []string{c.ca.Country},
 				Province:           []string{c.ca.Province},
 				Locality:           []string{c.ca.Locality},
@@ -123,18 +123,12 @@ func (c *Certificate) requestCertificate(ctx context.Context, authPayload *types
 			},
 		}
 
-		signingRequest, err := crypto.GenerateCSR(parameters)
+		signingRequest, err := baseca.GenerateCSR(parameters)
 		if err != nil {
 			return nil, err
 		}
 
-		key, err := x509.ParsePKCS1PrivateKey(signingRequest.PrivateKey.Bytes)
-		if err != nil {
-			return nil, errors.New("error parsing pkcs1 rsa private key")
-		}
-
-		pk := crypto.RSA{PrivateKey: key, PublicKey: &key.PublicKey}
-		err = crypto.WriteKeyToFile(intermediateCa, &pk)
+		err = crypto.WriteKeyToFile(intermediateCa, signingRequest.PrivateKey)
 		if err != nil {
 			return nil, err
 		}

@@ -6,69 +6,94 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"fmt"
+	"hash"
+
+	"github.com/coinbase/baseca/pkg/types"
 )
 
-type CertificateAuthority struct {
-	Certificate             *x509.Certificate
-	AsymmetricKey           *AsymmetricKey
-	SerialNumber            string
-	CertificateAuthorityArn string
+type RSASigner struct {
+	PrivateKey         *rsa.PrivateKey
+	SignatureAlgorithm x509.SignatureAlgorithm
+	Hash               func() (hash.Hash, crypto.Hash)
 }
 
-type AsymmetricKey interface {
-	KeyPair() interface{}
-	Sign(data []byte) ([]byte, error)
+type ECDSASigner struct {
+	PrivateKey         *ecdsa.PrivateKey
+	SignatureAlgorithm x509.SignatureAlgorithm
+	Hash               func() (hash.Hash, crypto.Hash)
 }
 
-type RSA struct {
-	PublicKey  *rsa.PublicKey
-	PrivateKey *rsa.PrivateKey
-}
-
-type ECDSA struct {
-	PublicKey  *ecdsa.PublicKey
-	PrivateKey *ecdsa.PrivateKey
-}
-
-func (key *RSA) KeyPair() interface{} {
-	return key
-}
-
-func (key *RSA) Sign(data []byte) ([]byte, error) {
-	h := crypto.SHA256.New()
-	h.Write(data)
-	hashed := h.Sum(nil)
-	return rsa.SignPKCS1v15(rand.Reader, key.PrivateKey, crypto.SHA256, hashed)
-}
-
-func (key *ECDSA) KeyPair() interface{} {
-	return key
-}
-
-func (key *ECDSA) Sign(data []byte) ([]byte, error) {
-	h := crypto.SHA256.New()
-	h.Write(data)
-	hashed := h.Sum(nil)
-	r, s, err := ecdsa.Sign(rand.Reader, key.PrivateKey, hashed)
-	if err != nil {
-		return nil, err
-	}
-	signature := append(r.Bytes(), s.Bytes()...)
-	return signature, nil
-}
-
-func ReturnPrivateKey(key AsymmetricKey) (interface{}, error) {
-	if key == nil {
-		return nil, fmt.Errorf("asymmetric key is nil")
-	}
-
-	switch k := key.KeyPair().(type) {
-	case *RSA:
-		return k.PrivateKey, nil
-	case *ECDSA:
-		return k.PrivateKey, nil
+func (r *RSASigner) Sign(data []byte) ([]byte, error) {
+	hash, cryptoHash := r.Hash()
+	hash.Write(data)
+	hashedValue := hash.Sum(nil)
+	switch r.SignatureAlgorithm {
+	case x509.SHA256WithRSAPSS, x509.SHA384WithRSAPSS, x509.SHA512WithRSAPSS:
+		return rsa.SignPSS(rand.Reader, r.PrivateKey, cryptoHash, hashedValue, &rsa.PSSOptions{
+			SaltLength: rsa.PSSSaltLengthAuto,
+		})
 	default:
-		return nil, fmt.Errorf("unsupported key type")
+		return rsa.SignPKCS1v15(rand.Reader, r.PrivateKey, cryptoHash, hashedValue)
 	}
+}
+
+func (e *ECDSASigner) Sign(data []byte) ([]byte, error) {
+	hash, _ := e.Hash()
+	hash.Write(data)
+	hashedValue := hash.Sum(nil)
+	return ecdsa.SignASN1(rand.Reader, e.PrivateKey, hashedValue)
+}
+
+func EncodeToPKCS8(pkBlock *pem.Block) (*pem.Block, error) {
+	var key interface{}
+	var err error
+
+	switch pkBlock.Type {
+	case types.RSA_PRIVATE_KEY.String():
+		key, err = x509.ParsePKCS1PrivateKey(pkBlock.Bytes)
+	case types.ECDSA_PRIVATE_KEY.String():
+		key, err = x509.ParseECPrivateKey(pkBlock.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported key type %s", pkBlock.Type)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse private key: %v", err)
+	}
+
+	pkcs8Bytes, err := x509.MarshalPKCS8PrivateKey(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal to PKCS#8: %v", err)
+	}
+
+	pkcs8Encoding := &pem.Block{
+		Type:  types.PKCS8_PRIVATE_KEY.String(), // PKCS#8 Encoding
+		Bytes: pkcs8Bytes,
+	}
+
+	return pkcs8Encoding, nil
+}
+
+func ReturnSignerInterface(pkBlock *pem.Block) (crypto.Signer, error) {
+	var key interface{}
+	var err error
+
+	switch pkBlock.Type {
+	case types.RSA_PRIVATE_KEY.String():
+		key, err = x509.ParsePKCS1PrivateKey(pkBlock.Bytes)
+	case types.ECDSA_PRIVATE_KEY.String():
+		key, err = x509.ParseECPrivateKey(pkBlock.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported key type %s", pkBlock.Type)
+	}
+
+	var signer crypto.Signer
+	var ok bool
+
+	if signer, ok = key.(crypto.Signer); !ok {
+		return nil, fmt.Errorf("failed to parse private key: %v", err)
+	}
+	return signer, nil
 }

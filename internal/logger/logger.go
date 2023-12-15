@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/coinbase/baseca/internal/types"
 	"github.com/gogo/status"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -12,11 +13,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/peer"
-
-	"github.com/coinbase/baseca/internal/types"
 )
 
-type Extractor func(resp any, err error, code codes.Code) string
+type Extractor func(resp interface{}, err error, code codes.Code) string
 
 type Error struct {
 	UserError     error
@@ -35,7 +34,7 @@ func RpcError(user, internal error) *Error {
 }
 
 func RpcLogger(extractor Extractor) grpc.UnaryServerInterceptor {
-	return func(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp any, err error) {
+	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
 		currentTime := time.Now().UTC()
 		result, err := handler(ctx, req)
 		duration := time.Since(currentTime)
@@ -56,14 +55,14 @@ func RpcLogger(extractor Extractor) grpc.UnaryServerInterceptor {
 			Str("ip_address", clientIP).
 			Dur("duration", duration)
 
-		provisioner, ok := ctx.Value(types.ProvisionerAuthenticationContextKey).(*types.ProvisionerAccountPayload)
+		provisioner, ok := ctx.Value(types.ProvisionerAuthenticationContextKey).(string)
 		if ok {
-			event.Str("provisioner_account_uuid", provisioner.ClientId.String())
+			event.Str("provisioner_account_uuid", provisioner)
 		}
 
-		service, ok := ctx.Value(types.ServiceAuthenticationContextKey).(*types.ServiceAccountPayload)
+		service, ok := ctx.Value(types.ServiceAuthenticationContextKey).(string)
 		if ok {
-			event.Str("service_account_uuid", service.ServiceID.String())
+			event.Str("service_account_uuid", service)
 		}
 
 		event.Msg(extractor(result, err, statusCode))
@@ -170,7 +169,7 @@ func (ctxLogger *ContextLogger) fields(fields []zap.Field) []zap.Field {
 }
 
 func (ctxLogger *ContextLogger) stackFields(fields []zap.Field) []zap.Field {
-	return ctxLogger.fields(fields)
+	return append(ctxLogger.fields(fields))
 }
 
 func (ctxLogger *ContextLogger) Panic(msg string, fields ...zap.Field) {

@@ -1,9 +1,13 @@
 package baseca
 
-import "crypto/x509"
+import (
+	"crypto/x509"
+	"sync"
+	"time"
+)
 
 var Attestation Provider = Provider{
-	Local: "NONE",
+	Local: "Local",
 	AWS:   "AWS",
 }
 
@@ -15,6 +19,8 @@ var Env = Environment{
 	PreProduction: "PreProduction",
 	Production:    "Production",
 }
+
+var iidCacheExpiration = 10 * time.Minute
 
 type Environment struct {
 	Local         string
@@ -57,6 +63,9 @@ type DistinguishedName struct {
 	Locality           []string
 	Organization       []string
 	OrganizationalUnit []string
+	StreetAddress      []string
+	PostalCode         []string
+	SerialNumber       string
 }
 
 type Output struct {
@@ -65,4 +74,10 @@ type Output struct {
 	IntermediateCertificateChain string
 	RootCertificateChain         string
 	PrivateKey                   string
+}
+
+type iidCache struct {
+	expiration time.Time
+	lock       sync.Mutex
+	value      string
 }
