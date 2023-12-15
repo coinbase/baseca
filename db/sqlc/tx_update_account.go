@@ -26,19 +26,19 @@ func (store *SQLStore) TxUpdateServiceAccount(ctx context.Context, arg Account, 
 		NodeAttestation:             arg.NodeAttestation,
 	}
 
-	raw_message, err := validator.MapToNullRawMessage(attestation.AWSInstanceIdentityDocument.InstanceTags)
+	raw_message, err := validator.MapToNullRawMessage(attestation.EC2NodeAttestation.InstanceTags)
 	if err != nil {
 		return nil, err
 	}
 
 	iid := StoreInstanceIdentityDocumentParams{
 		ClientID:        arg.ClientID,
-		RoleArn:         sql.NullString{String: attestation.AWSInstanceIdentityDocument.RoleArn, Valid: len(attestation.AWSInstanceIdentityDocument.RoleArn) != 0},
-		AssumeRole:      sql.NullString{String: attestation.AWSInstanceIdentityDocument.AssumeRole, Valid: len(attestation.AWSInstanceIdentityDocument.AssumeRole) != 0},
-		SecurityGroupID: attestation.AWSInstanceIdentityDocument.SecurityGroups,
-		Region:          sql.NullString{String: attestation.AWSInstanceIdentityDocument.Region, Valid: len(attestation.AWSInstanceIdentityDocument.Region) != 0},
-		InstanceID:      sql.NullString{String: attestation.AWSInstanceIdentityDocument.InstanceID, Valid: len(attestation.AWSInstanceIdentityDocument.InstanceID) != 0},
-		ImageID:         sql.NullString{String: attestation.AWSInstanceIdentityDocument.ImageID, Valid: len(attestation.AWSInstanceIdentityDocument.ImageID) != 0},
+		RoleArn:         sql.NullString{String: attestation.EC2NodeAttestation.RoleArn, Valid: len(attestation.EC2NodeAttestation.RoleArn) != 0},
+		AssumeRole:      sql.NullString{String: attestation.EC2NodeAttestation.AssumeRole, Valid: len(attestation.EC2NodeAttestation.AssumeRole) != 0},
+		SecurityGroupID: attestation.EC2NodeAttestation.SecurityGroups,
+		Region:          sql.NullString{String: attestation.EC2NodeAttestation.Region, Valid: len(attestation.EC2NodeAttestation.Region) != 0},
+		InstanceID:      sql.NullString{String: attestation.EC2NodeAttestation.InstanceID, Valid: len(attestation.EC2NodeAttestation.InstanceID) != 0},
+		ImageID:         sql.NullString{String: attestation.EC2NodeAttestation.ImageID, Valid: len(attestation.EC2NodeAttestation.ImageID) != 0},
 		InstanceTags:    raw_message,
 	}
 
@@ -52,7 +52,7 @@ func (store *SQLStore) TxUpdateServiceAccount(ctx context.Context, arg Account, 
 
 		for _, node_attestation := range arg.NodeAttestation {
 			switch node_attestation {
-			case types.Attestation.AWS_IID:
+			case types.AWS_IID.String():
 				// Add to AWS_IID Database
 				_, err = store.StoreInstanceIdentityDocument(ctx, iid)
 				if err != nil {

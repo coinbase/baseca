@@ -15,6 +15,7 @@ import (
 	"github.com/coinbase/baseca/internal/client/secretsmanager"
 	"github.com/coinbase/baseca/internal/config"
 	lib "github.com/coinbase/baseca/internal/lib/authentication"
+	"github.com/coinbase/baseca/internal/lib/util"
 	"github.com/coinbase/baseca/internal/logger"
 	"github.com/coinbase/baseca/internal/v1/accounts"
 	"github.com/coinbase/baseca/internal/v1/certificate"
@@ -105,12 +106,15 @@ func StartRPC(lc fx.Lifecycle, cfg *config.Config) error {
 	term := make(chan error)
 	var grpcServer *grpc.Server
 
+	// Monitor CPU Load
+	go util.UpdateCPULoad()
+
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 
 			// RPC Middleware Logger
 			logInterceptor := logger.RpcLogger(extractor)
-			interceptors := grpc_middleware.ChainUnaryServer(server.Middleware.ServerAuthenticationInterceptor, logInterceptor)
+			interceptors := grpc_middleware.ChainUnaryServer(server.Middleware.SetAuthenticationContext, logInterceptor, server.Middleware.ServerAuthenticationInterceptor)
 			grpcServer = grpc.NewServer(grpc.UnaryInterceptor(interceptors))
 
 			// Service Registration
@@ -196,7 +200,7 @@ func GetPgConn(conf config.DatabaseConfig, endpoint, credentials string) (*sql.D
 	if conf.SSLMode == "disable" {
 		dataSource = fmt.Sprintf("%s sslmode=disable", dataSource)
 	} else {
-		dataSource = fmt.Sprintf("%s sslmode=verify-full sslrootcert=config/certificate_authority/rds.global.bundle.pem", dataSource)
+		dataSource = fmt.Sprintf("%s sslmode=verify-full sslrootcert=config/aws/rds.global.bundle.pem", dataSource)
 	}
 
 	// Open Database Connection

@@ -21,10 +21,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var (
-	_production = "production"
-)
-
 func (s *Service) CreateProvisionerAccount(ctx context.Context, req *apiv1.CreateProvisionerAccountRequest) (*apiv1.CreateProvisionerAccountResponse, error) {
 	var service *db.Provisioner
 	nodeAttestation := []string{}
@@ -45,7 +41,7 @@ func (s *Service) CreateProvisionerAccount(ctx context.Context, req *apiv1.Creat
 	}
 
 	for _, environment := range req.Environments {
-		if _, ok := validator.CertificateAuthorityEnvironments[environment]; !ok {
+		if _, ok := validator.CertificateAuthorityEnvironmentsString[environment]; !ok {
 			return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid certificate authority environment"), fmt.Errorf("invalid certificate authority environment [%s]", environment))
 		}
 	}
@@ -88,8 +84,8 @@ func (s *Service) CreateProvisionerAccount(ctx context.Context, req *apiv1.Creat
 		return nil, status.Error(codes.InvalidArgument, "service auth context missing")
 	}
 
-	if validator.Contains(req.Environments, _production) || req.NodeAttestation != nil {
-		if err = validateNodeAttestation(req.NodeAttestation); err != nil {
+	if validator.Contains(req.Environments, types.Production.String()) || req.NodeAttestation != nil {
+		if err = verifyNodeAttestationParameters(req.NodeAttestation); err != nil {
 			return nil, logger.RpcError(status.Error(codes.InvalidArgument, err.Error()), err)
 		}
 	}
@@ -239,7 +235,7 @@ func (s *Service) ProvisionServiceAccount(ctx context.Context, req *apiv1.Provis
 
 	if len(certificate_authorities) == 0 {
 		environment := req.Environment
-		certificate_authorities := validator.CertificateAuthorityEnvironments[environment]
+		certificate_authorities := validator.CertificateAuthorityEnvironmentsString[environment]
 
 		// Include Default Certificate Authorities
 		for _, ca := range certificate_authorities {
@@ -286,8 +282,8 @@ func (s *Service) ProvisionServiceAccount(ctx context.Context, req *apiv1.Provis
 		return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid team parameter"), fmt.Errorf("invalid team [%s]", req.Team))
 	}
 
-	if req.Environment == _production || req.NodeAttestation != nil {
-		if err = validateNodeAttestation(req.NodeAttestation); err != nil {
+	if req.Environment == types.Production.String() || req.NodeAttestation != nil {
+		if err = verifyNodeAttestationParameters(req.NodeAttestation); err != nil {
 			return nil, logger.RpcError(status.Error(codes.InvalidArgument, err.Error()), err)
 		}
 	}

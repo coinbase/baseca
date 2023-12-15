@@ -8,10 +8,10 @@ import (
 	"math/big"
 	"time"
 
-	db "github.com/coinbase/baseca/db/sqlc"
 	"github.com/coinbase/baseca/internal/client/firehose"
 	"github.com/coinbase/baseca/internal/lib/crypto"
 	"github.com/coinbase/baseca/internal/types"
+	lib "github.com/coinbase/baseca/pkg/crypto"
 )
 
 func (c *Certificate) buildCertificateAuthorityParameters(certificate_authority string) types.CertificateParameters {
@@ -25,7 +25,7 @@ func (c *Certificate) buildCertificateAuthorityParameters(certificate_authority 
 	}
 }
 
-func (c *Certificate) issueEndEntityCertificate(auth *types.ServiceAccountPayload, ca_certificate *types.CertificateAuthority, request_csr *x509.CertificateRequest) (*db.CertificateResponseData, error) {
+func (c *Certificate) issueEndEntityCertificate(auth *types.ServiceAccountPayload, ca_certificate *types.CertificateAuthority, request_csr *x509.CertificateRequest) (*types.CertificateResponseData, error) {
 	block := make([]byte, 20)
 	_, err := rand.Read(block[:])
 	if err != nil {
@@ -60,11 +60,11 @@ func (c *Certificate) issueEndEntityCertificate(auth *types.ServiceAccountPayloa
 	}
 
 	certificateAuthorityRaw := ca_certificate.Certificate.Raw
-	pk, err := crypto.ReturnPrivateKey(*ca_certificate.AsymmetricKey)
+	signer, err := lib.ReturnSignerInterface(ca_certificate.PrivateKey)
 	if err != nil {
 		return nil, err
 	}
-	certificateRaw, err := x509.CreateCertificate(rand.Reader, &certificateTemplate, ca_certificate.Certificate, request_csr.PublicKey, pk)
+	certificateRaw, err := x509.CreateCertificate(rand.Reader, &certificateTemplate, ca_certificate.Certificate, request_csr.PublicKey, signer)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func (c *Certificate) issueEndEntityCertificate(auth *types.ServiceAccountPayloa
 		return nil, err
 	}
 
-	return &db.CertificateResponseData{
+	return &types.CertificateResponseData{
 		Certificate:                  certificate.String(),
 		IntermediateCertificateChain: intermediate_chain.String(),
 		RootCertificateChain:         root_chain.String(),

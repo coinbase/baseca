@@ -29,8 +29,16 @@ test: info clean dependencies
 
 .PHONY: build
 build: info clean
-	@ GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/darwin/$(SERVICE) cmd/baseca/server.go
+	@ GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/amd64/$(SERVICE) cmd/baseca/server.go
+	@ GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(BIN)/arm64/$(SERVICE) cmd/baseca/server.go
+
+.PHONY: build_amd64
+build_amd64: info clean
 	@ GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(BIN)/linux/$(SERVICE) cmd/baseca/server.go
+
+.PHONY: build_arm64
+build_arm64: info clean
+	@ GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o $(BIN)/linux/$(SERVICE) cmd/baseca/server.go
 
 .PHONY: sqlc
 sqlc:

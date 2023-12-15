@@ -14,6 +14,7 @@ import (
 	pca_types "github.com/aws/aws-sdk-go-v2/service/acmpca/types"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 	"github.com/coinbase/baseca/internal/types"
+	lib "github.com/coinbase/baseca/pkg/types"
 )
 
 const (
@@ -29,7 +30,7 @@ func (c *PrivateCaClient) IssueCertificateFromTemplate(parameters *apiv1.Certifi
 		return nil, err
 	}
 
-	signingAlgorithm, ok := types.ValidSignatures[parameters.SignAlgorithm]
+	signingAlgorithm, ok := lib.ValidSignatures[parameters.SignAlgorithm]
 	if !ok {
 		return nil, fmt.Errorf("signature algorithm %s invalid", parameters.SignAlgorithm)
 	}
@@ -70,7 +71,7 @@ func (c *PrivateCaClient) IssueSubordinateCertificate(parameters types.Certifica
 		return nil, err
 	}
 
-	signingAlgorithm, ok := types.ValidSignatures[algorithm]
+	signingAlgorithm, ok := lib.ValidSignatures[algorithm]
 	if !ok {
 		return nil, fmt.Errorf("signature algorithm %s invalid", algorithm)
 	}

@@ -20,7 +20,7 @@ func ValidateCertificateAuthorityEnvironment(config config.Stage, environment st
 	}
 
 	for _, certificate_authority := range certificate_authorities {
-		if output := Contains(CertificateAuthorityEnvironments[environment], certificate_authority); !output {
+		if output := Contains(CertificateAuthorityEnvironmentsString[environment], certificate_authority); !output {
 			return false
 		}
 	}

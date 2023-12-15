@@ -2,13 +2,13 @@ package examples
 
 import (
 	"crypto/x509"
-	"fmt"
 	"log"
 
+	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 	baseca "github.com/coinbase/baseca/pkg/client"
 )
 
-func SignCSR() {
+func OperationsSignCSR() {
 	configuration := baseca.Configuration{
 		URL:         "localhost:9090",
 		Environment: baseca.Env.Local,
@@ -21,12 +21,20 @@ func SignCSR() {
 
 	client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
 
-	metadata := baseca.CertificateRequest{
-		CommonName:            "sandbox.coinbase.com",
-		SubjectAlternateNames: []string{"sandbox.coinbase.com"},
+	certAuth := apiv1.CertificateAuthorityParameter{
+		Region:        "us-east-1",
+		CaArn:         "arn:aws:acm-pca:us-east-1:1123331122:certificate-authority/112311-111231-1123131-11231",
+		SignAlgorithm: "SHA512WITHRSA",
+		AssumeRole:    false,
+		Validity:      30,
+	}
+
+	certificateRequest := baseca.CertificateRequest{
+		CommonName:            "example.coinbase.com",
+		SubjectAlternateNames: []string{"example.coinbase.com"},
 		SigningAlgorithm:      x509.SHA384WithRSA,
 		PublicKeyAlgorithm:    x509.RSA,
 		KeySize:               4096,
@@ -35,18 +43,19 @@ func SignCSR() {
 			// Additional Fields
 		},
 		Output: baseca.Output{
-			PrivateKey:                   "/tmp/private.key",
-			Certificate:                  "/tmp/certificate.crt",
+			PrivateKey:                   "/tmp/sandbox.key",
+			CertificateSigningRequest:    "/tmp/sandbox.csr",
+			Certificate:                  "/tmp/sandbox.crt",
 			IntermediateCertificateChain: "/tmp/intermediate_chain.crt",
 			RootCertificateChain:         "/tmp/root_chain.crt",
-			CertificateSigningRequest:    "/tmp/certificate_request.csr",
 		},
 	}
 
-	response, err := client.IssueCertificate(metadata)
+	res, err := client.ProvisionIssueCertificate(certificateRequest, &certAuth, "example", "development", "EndEntityServerAuthCertificate")
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("%+v", response)
+	log.Printf("%+v", res)
+
 }

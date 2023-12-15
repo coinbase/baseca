@@ -17,6 +17,7 @@ import (
 	"github.com/coinbase/baseca/internal/lib/util"
 	"github.com/coinbase/baseca/internal/lib/util/validator"
 	"github.com/coinbase/baseca/internal/types"
+	lib "github.com/coinbase/baseca/pkg/types"
 )
 
 const (
@@ -120,17 +121,17 @@ func convertX509toString(certificate []byte) (*bytes.Buffer, error) {
 func ValidateSubordinateParameters(parameter config.SubordinateCertificateAuthority) error {
 	switch parameter.KeyAlgorithm {
 	case "RSA":
-		if _, ok := types.PublicKeyAlgorithms[parameter.KeyAlgorithm].KeySize[parameter.KeySize]; !ok {
+		if _, ok := lib.PublicKeyAlgorithmStrings[parameter.KeyAlgorithm].KeySize[parameter.KeySize]; !ok {
 			return fmt.Errorf("invalid rsa key size: %d", parameter.KeySize)
 		}
-		if _, ok := types.PublicKeyAlgorithms[parameter.KeyAlgorithm].Signature[parameter.SigningAlgorithm]; !ok {
+		if _, ok := lib.PublicKeyAlgorithmStrings[parameter.KeyAlgorithm].Signature[parameter.SigningAlgorithm]; !ok {
 			return fmt.Errorf("invalid rsa signing algorithm: %s", parameter.SigningAlgorithm)
 		}
 	case "ECDSA":
-		if _, ok := types.PublicKeyAlgorithms[parameter.KeyAlgorithm].KeySize[parameter.KeySize]; !ok {
+		if _, ok := lib.PublicKeyAlgorithmStrings[parameter.KeyAlgorithm].KeySize[parameter.KeySize]; !ok {
 			return fmt.Errorf("invalid ecdsa key size: %d", parameter.KeySize)
 		}
-		if _, ok := types.PublicKeyAlgorithms[parameter.KeyAlgorithm].Signature[parameter.SigningAlgorithm]; !ok {
+		if _, ok := lib.PublicKeyAlgorithmStrings[parameter.KeyAlgorithm].Signature[parameter.SigningAlgorithm]; !ok {
 			return fmt.Errorf("invalid ecdsa signing algorithm: %s", parameter.SigningAlgorithm)
 		}
 	default:

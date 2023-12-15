@@ -98,7 +98,7 @@ func (c *Certificate) QueryCertificateMetadata(ctx context.Context, req *apiv1.Q
 	}
 
 	if len(req.Environment) != 0 {
-		if _, ok := validator.CertificateAuthorityEnvironments[req.Environment]; !ok {
+		if _, ok := validator.CertificateAuthorityEnvironmentsString[req.Environment]; !ok {
 			return nil, logger.RpcError(status.Error(codes.InvalidArgument, "invalid environment"), fmt.Errorf("invalid environment: %s", req.Environment))
 		}
 

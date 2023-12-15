@@ -16,13 +16,13 @@ func TestSupportedEnvironments(t *testing.T) {
 
 	SupportedEnvironments(cfg)
 
-	if len(CertificateAuthorityEnvironments["local"]) == 0 {
+	if len(CertificateAuthorityEnvironments[types.Local]) == 0 {
 		t.Errorf("Expected non-empty local environments, got none")
 	}
 }
 
 func TestSetBaseDirectory(t *testing.T) {
-	// When BaseDirectory is provided
+	// BaseDirectory Provided
 	cfg := &config.Config{
 		SubordinateMetadata: config.SubordinateCertificateAuthority{
 			BaseDirectory: "/some/dir",
