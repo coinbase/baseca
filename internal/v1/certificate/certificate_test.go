@@ -10,9 +10,9 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/acmpca"
 	firehose_v2 "github.com/aws/aws-sdk-go-v2/service/firehose"
-	"github.com/aws/aws-sdk-go/aws"
 	mock_store "github.com/coinbase/baseca/db/mock"
 	db "github.com/coinbase/baseca/db/sqlc"
 	acm_pca "github.com/coinbase/baseca/internal/client/acmpca"
