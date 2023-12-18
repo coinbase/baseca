@@ -335,10 +335,6 @@ func main() {
 
     client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
     if err != nil {
-      fmt.Println(err)
-    }
-
-    if err != nil {
       // Handle Error
       log.Fatal(err)
     }
@@ -361,7 +357,6 @@ func main() {
         CertificateSigningRequest:    "/tmp/certificate_request.csr", // baseca CSR Output Location
       },
       }
-    }
 
     response, err := client.IssueCertificate(metadata)
 
