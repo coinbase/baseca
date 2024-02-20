@@ -80,7 +80,7 @@ func (c *Certificate) SignCSR(ctx context.Context, req *apiv1.CertificateSigning
 
 func (c *Certificate) requestCertificate(ctx context.Context, authPayload *types.ServiceAccountPayload, certificateRequest *x509.CertificateRequest) (*types.CertificateResponseData, error) {
 	var subordinate *types.CertificateAuthority
-	var parameters baseca.CertificateRequest
+	var parameters lib.CertificateRequest
 	var csr *bytes.Buffer
 	var err error
 
@@ -108,13 +108,13 @@ func (c *Certificate) requestCertificate(ctx context.Context, authPayload *types
 			return nil, fmt.Errorf("invalid signing algorithm: %s", c.ca.SigningAlgorithm)
 		}
 
-		parameters = baseca.CertificateRequest{
+		parameters = lib.CertificateRequest{
 			CommonName:            intermediateCa,
 			SubjectAlternateNames: []string{intermediateCa},
 			SigningAlgorithm:      signingAlgorithm.Common,
 			PublicKeyAlgorithm:    lib.PublicKeyAlgorithmStrings[c.ca.KeyAlgorithm].Algorithm,
 			KeySize:               c.ca.KeySize,
-			DistinguishedName: baseca.DistinguishedName{
+			DistinguishedName: lib.DistinguishedName{
 				Country:            []string{c.ca.Country},
 				Province:           []string{c.ca.Province},
 				Locality:           []string{c.ca.Locality},

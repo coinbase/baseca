@@ -59,7 +59,7 @@ Sign Certificate Signing Request (CSR)
 Service Account Authentication
 
 **Client Example**
-[sign_csr.go](../examples/certificate/baseca.v1.Certificate/sign_csr.go)
+[sign_csr.go](../examples/baseca.v1.Certificate/sign_csr.go)
 
 **Request**
 
@@ -340,7 +340,7 @@ Manual Sign Certificate Signing Request (CSR)
 Provisioner Account Authentication
 
 **Client Example**
-[operations_sign_csr.go](../examples/certificate/baseca.v1.Certificate/operations_sign_csr.go)
+[operations_sign_csr.go](../examples/baseca.v1.Certificate/operations_sign_csr.go)
 
 **Request**
 

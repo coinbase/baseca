@@ -25,25 +25,20 @@ type ECDSASigner struct {
 	Hash               func() (hash.Hash, crypto.Hash)
 }
 
-func (r *RSASigner) Sign(data []byte) ([]byte, error) {
-	hash, cryptoHash := r.Hash()
-	hash.Write(data)
-	hashedValue := hash.Sum(nil)
+func (r *RSASigner) Sign(hashedData []byte) ([]byte, error) {
+	_, cryptoHash := r.Hash()
 	switch r.SignatureAlgorithm {
 	case x509.SHA256WithRSAPSS, x509.SHA384WithRSAPSS, x509.SHA512WithRSAPSS:
-		return rsa.SignPSS(rand.Reader, r.PrivateKey, cryptoHash, hashedValue, &rsa.PSSOptions{
+		return rsa.SignPSS(rand.Reader, r.PrivateKey, cryptoHash, hashedData, &rsa.PSSOptions{
 			SaltLength: rsa.PSSSaltLengthAuto,
 		})
 	default:
-		return rsa.SignPKCS1v15(rand.Reader, r.PrivateKey, cryptoHash, hashedValue)
+		return rsa.SignPKCS1v15(rand.Reader, r.PrivateKey, cryptoHash, hashedData)
 	}
 }
 
-func (e *ECDSASigner) Sign(data []byte) ([]byte, error) {
-	hash, _ := e.Hash()
-	hash.Write(data)
-	hashedValue := hash.Sum(nil)
-	return ecdsa.SignASN1(rand.Reader, e.PrivateKey, hashedValue)
+func (e *ECDSASigner) Sign(hashedData []byte) ([]byte, error) {
+	return ecdsa.SignASN1(rand.Reader, e.PrivateKey, hashedData)
 }
 
 func EncodeToPKCS8(pkBlock *pem.Block) (*pem.Block, error) {

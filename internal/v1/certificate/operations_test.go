@@ -12,6 +12,7 @@ import (
 	db "github.com/coinbase/baseca/db/sqlc"
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 	c "github.com/coinbase/baseca/pkg/client"
+	"github.com/coinbase/baseca/pkg/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -80,7 +81,7 @@ func TestOperationsSignCSR(t *testing.T) {
 		{
 			name: "OK_NO_CERTIFICATE_AUTHORITY_INPUT",
 			req: func() *apiv1.OperationsSignRequest {
-				req := c.CertificateRequest{
+				req := types.CertificateRequest{
 					CommonName:            "development.example.com",
 					SubjectAlternateNames: []string{"development.example.com"},
 					SigningAlgorithm:      x509.SHA512WithRSA,
@@ -138,7 +139,7 @@ func TestOperationsSignCSR(t *testing.T) {
 		{
 			name: "OK_CERTIFICATE_AUTHORITY_INPUT",
 			req: func() *apiv1.OperationsSignRequest {
-				req := c.CertificateRequest{
+				req := types.CertificateRequest{
 					CommonName:            "development.example.com",
 					SubjectAlternateNames: []string{"development.example.com"},
 					SigningAlgorithm:      x509.SHA512WithRSA,

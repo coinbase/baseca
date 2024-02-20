@@ -29,9 +29,13 @@ type Client struct {
 	Authentication Authentication
 	Attestation    string
 	Certificate    apiv1.CertificateClient
+	Account        AccountClient
 	Service        apiv1.ServiceClient
+	Insecure       bool
 	*iidCache
 }
+
+type ClientOptions func(*Client) error
 
 type AccountClient interface {
 	LoginUser(ctx context.Context, in *apiv1.LoginUserRequest, opts ...grpc.CallOption) (*apiv1.LoginUserResponse, error)
@@ -66,32 +70,44 @@ type ServiceClient interface {
 	DeleteProvisionedServiceAccount(ctx context.Context, in *apiv1.AccountId, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
-func LoadDefaultConfiguration(configuration Configuration, attestation string, authentication Authentication) (*Client, error) {
+func NewClient(endpoint string, attestation string, opts ...ClientOptions) (*Client, error) {
+	var creds credentials.TransportCredentials
+
 	c := Client{
-		Endpoint:       configuration.URL,
-		Authentication: authentication,
+		Endpoint:       endpoint,
 		Attestation:    attestation,
+		Authentication: Authentication{},
+		Insecure:       false,
 	}
 
-	if configuration.Environment == Env.Local {
-		conn, err := grpc.Dial(configuration.URL, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithUnaryInterceptor(c.methodInterceptor()))
+	if len(opts) > 0 {
+		err := c.ApplyOptions(opts...)
 		if err != nil {
-			return nil, fmt.Errorf("failed to initialize grpc client")
+			return nil, err
 		}
-		c.Certificate = apiv1.NewCertificateClient(conn)
-		return &c, nil
-	} else {
-		conn, err := grpc.Dial(configuration.URL, grpc.WithTransportCredentials(
-			credentials.NewTLS(&tls.Config{
-				MinVersion: tls.VersionTLS12,
-			}),
-		), grpc.WithUnaryInterceptor(c.methodInterceptor()))
-		if err != nil {
-			return nil, fmt.Errorf("failed to initialize grpc client")
-		}
-		c.Certificate = apiv1.NewCertificateClient(conn)
-		return &c, nil
 	}
+
+	if c.Insecure {
+		creds = insecure.NewCredentials()
+	} else {
+		creds = credentials.NewTLS(&tls.Config{
+			MinVersion: tls.VersionTLS12,
+		})
+	}
+
+	conn, err := grpc.Dial(
+		endpoint, grpc.WithTransportCredentials(creds),
+		grpc.WithUnaryInterceptor(c.methodInterceptor()),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize grpc client %w", err)
+	}
+
+	c.Certificate = apiv1.NewCertificateClient(conn)
+	c.Service = apiv1.NewServiceClient(conn)
+	c.Account = apiv1.NewAccountClient(conn)
+
+	return &c, nil
 }
 
 func (c *Client) methodInterceptor() grpc.UnaryClientInterceptor {
@@ -108,7 +124,6 @@ func (c *Client) methodInterceptor() grpc.UnaryClientInterceptor {
 
 		// Account Interface
 		"/baseca.v1.Account/LoginUser": c.accountAuthUnaryInterceptor,
-		// TODO: Add Additional RPC Methods
 	}
 	return mapMethodInterceptor(methodOptions)
 }
@@ -145,7 +160,7 @@ func (c *Client) clientAuthUnaryInterceptor(ctx context.Context, method string, 
 	ctx = metadata.AppendToOutgoingContext(ctx, _client_token_header, c.Authentication.ClientToken)
 
 	if c.Attestation == Attestation.AWS {
-		instance_metadata, err := c.iidCache.Get()
+		instance_metadata, err := globalIIDCache.Get()
 		if err != nil {
 			return fmt.Errorf("error generating aws_iid node attestation: %w", err)
 		}
@@ -162,6 +177,11 @@ func (c *Client) accountAuthUnaryInterceptor(ctx context.Context, method string,
 	err := invoker(ctx, method, req, reply, cc, opts...)
 	return err
 }
+
+// We cache this globally in case multiple clients are instantiated: they
+// share the cache. They will all have the same IID based on the EC2 instance
+// they're running on.
+var globalIIDCache = &iidCache{}
 
 func (cache *iidCache) Get() (string, error) {
 	cache.lock.Lock()
@@ -185,4 +205,34 @@ func (cache *iidCache) Get() (string, error) {
 	cache.value = *instance_metadata
 	cache.expiration = time.Now().Add(iidCacheExpiration)
 	return cache.value, nil
+}
+
+func (c *Client) ApplyOptions(options ...ClientOptions) error {
+	for _, option := range options {
+		if err := option(c); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func WithClientId(clientId string) ClientOptions {
+	return func(c *Client) error {
+		c.Authentication.ClientId = clientId
+		return nil
+	}
+}
+
+func WithClientToken(clientToken string) ClientOptions {
+	return func(c *Client) error {
+		c.Authentication.ClientToken = clientToken
+		return nil
+	}
+}
+
+func WithInsecure() ClientOptions {
+	return func(c *Client) error {
+		c.Insecure = true
+		return nil
+	}
 }
