@@ -206,7 +206,8 @@ func generateCertificatePool(tc types.TrustChain) (*x509.CertPool, error) {
 		}
 
 		for _, certFile := range files {
-			data, err := os.ReadFile(filepath.Join(dir, certFile.Name()))
+			certificateFile := filepath.Join(dir, certFile.Name())
+			data, err := os.ReadFile(filepath.Clean(certificateFile))
 			if err != nil {
 				return nil, fmt.Errorf("invalid certificate file %s", filepath.Join(dir, certFile.Name()))
 			}
