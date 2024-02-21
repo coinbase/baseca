@@ -5,35 +5,32 @@ import (
 	"log"
 
 	baseca "github.com/coinbase/baseca/pkg/client"
+	"github.com/coinbase/baseca/pkg/types"
 )
 
 func SignCSR() {
-	configuration := baseca.Configuration{
-		URL:         "localhost:9090",
-		Environment: baseca.Env.Local,
-	}
-
-	authentication := baseca.Authentication{
-		ClientId:    "CLIENT_ID",
-		ClientToken: "CLIENT_TOKEN",
-	}
-
-	client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
+	client, err := baseca.NewClient("localhost:9090", baseca.Attestation.Local,
+		baseca.WithClientId("CLIENT_ID"), baseca.WithClientToken("CLIENT_TOKEN"),
+		baseca.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	metadata := baseca.CertificateRequest{
+	metadata := types.CertificateRequest{
 		CommonName:            "example.coinbase.com",
 		SubjectAlternateNames: []string{"example.coinbase.com"},
 		SigningAlgorithm:      x509.ECDSAWithSHA384,
 		PublicKeyAlgorithm:    x509.ECDSA,
 		KeySize:               256,
-		DistinguishedName: baseca.DistinguishedName{
-			Organization: []string{"Coinbase"},
+		DistinguishedName: types.DistinguishedName{
+			Organization:       []string{"Coinbase"},
+			Locality:           []string{"San Francisco"},
+			Province:           []string{"California"},
+			Country:            []string{"US"},
+			OrganizationalUnit: []string{"Security"},
 			// Additional Fields
 		},
-		Output: baseca.Output{
+		Output: types.Output{
 			PrivateKey:                   "/tmp/private.key",
 			Certificate:                  "/tmp/certificate.crt",
 			IntermediateCertificateChain: "/tmp/intermediate_chain.crt",

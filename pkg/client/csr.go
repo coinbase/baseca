@@ -13,7 +13,7 @@ import (
 	"github.com/coinbase/baseca/pkg/types"
 )
 
-func GenerateCSR(csr CertificateRequest) (*types.SigningRequest, error) {
+func GenerateCSR(csr types.CertificateRequest) (*types.SigningRequest, error) {
 	var generator crypto.CSRGenerator
 
 	switch csr.PublicKeyAlgorithm {

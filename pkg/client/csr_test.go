@@ -10,17 +10,17 @@ import (
 )
 
 func TestGenerateCSR(t *testing.T) {
-	csr := CertificateRequest{
+	csr := types.CertificateRequest{
 		PublicKeyAlgorithm: x509.RSA,
 		KeySize:            2048,
 		SigningAlgorithm:   x509.SHA256WithRSA,
 		CommonName:         "example.com",
-		DistinguishedName: DistinguishedName{
+		DistinguishedName: types.DistinguishedName{
 			Country:  []string{"US"},
 			Province: []string{"CA"},
 		},
 		SubjectAlternateNames: []string{"www.example.com", "subordinate.example.com"},
-		Output: Output{
+		Output: types.Output{
 			CertificateSigningRequest: "/tmp/csr.pem",
 			PrivateKey:                "/tmp/pk.pem",
 		},
@@ -35,17 +35,17 @@ func TestGenerateCSR(t *testing.T) {
 	assert.Contains(t, string(pem.EncodeToMemory(rsaSigningRequest.PrivateKey)), types.RSA_PRIVATE_KEY.String())
 
 	// Create an ECDSA CertificateRequest
-	ecdsaCsr := CertificateRequest{
+	ecdsaCsr := types.CertificateRequest{
 		PublicKeyAlgorithm: x509.ECDSA,
 		KeySize:            256,
 		SigningAlgorithm:   x509.ECDSAWithSHA512,
 		CommonName:         "example.com",
-		DistinguishedName: DistinguishedName{
+		DistinguishedName: types.DistinguishedName{
 			Country:  []string{"US"},
 			Province: []string{"CA"},
 		},
 		SubjectAlternateNames: []string{"www.example.com", "subordinate.example.com"},
-		Output: Output{
+		Output: types.Output{
 			CertificateSigningRequest: "/tmp/csr.pem",
 			PrivateKey:                "/tmp/pk.pem",
 		},

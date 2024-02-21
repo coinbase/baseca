@@ -35,7 +35,6 @@ grpcurl -vv -plaintext -H "Authorization: Bearer ${AUTH_TOKEN}" \
           "sandbox_use1"
         ],
         "certificate_validity": 30, # << Certificate Validity Scope >>
-        "account_type": "SERVICE",
         "subordinate_ca": "infrastructure", # << Subordinate CA Scope >>
         "team": "Infrastructure Security",
         "email": "security@coinbase.com"

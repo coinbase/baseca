@@ -320,40 +320,29 @@ import (
     "log"
 
     baseca "github.com/coinbase/baseca/pkg/client"
+    "github.com/coinbase/baseca/pkg/types"
 )
 
 func main() {
-    configuration := baseca.Configuration{
-      URL:         "localhost:9090",
-      Environment: baseca.Env.Local,
-    }
-
-    authentication := baseca.Authentication{
-      ClientId:    "CLIENT_ID",
-      ClientToken: "CLIENT_TOKEN",
-    }
-
-    client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
-    if err != nil {
-      fmt.Println(err)
-    }
+    client, err := baseca.NewClient("localhost:9090", baseca.Attestation.Local,
+      baseca.WithClientId("CLIENT_ID"), baseca.WithClientToken("CLIENT_TOKEN"),
+      baseca.WithInsecure()) // Insecure for Local Development
 
     if err != nil {
-      // Handle Error
       log.Fatal(err)
     }
 
-    metadata := baseca.CertificateRequest{
+    metadata := types.CertificateRequest{
       CommonName:            "development.coinbase.com",
       SubjectAlternateNames: []string{"development.coinbase.com"},
       SigningAlgorithm:      x509.SHA512WithRSA,
       PublicKeyAlgorithm:    x509.RSA,
       KeySize:               4096,
-      DistinguishedName: baseca.DistinguishedName{
+      DistinguishedName: types.DistinguishedName{
         Organization: []string{"Coinbase"},
         // Additional Fields
       },
-      Output: baseca.Output{
+      Output: types.Output{
         PrivateKey:                   "/tmp/private.key", // baseca Generate Private Key Output Location
         Certificate:                  "/tmp/certificate.crt", // baseca Signed Leaf Certificate Output Location
         IntermediateCertificateChain: "/tmp/intermediate_chain.crt", // baseca Signed Certificate Chain Up to Intermediate CA Output Location
@@ -361,7 +350,6 @@ func main() {
         CertificateSigningRequest:    "/tmp/certificate_request.csr", // baseca CSR Output Location
       },
       }
-    }
 
     response, err := client.IssueCertificate(metadata)
 

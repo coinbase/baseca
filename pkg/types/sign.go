@@ -9,6 +9,12 @@ import (
 	"io"
 )
 
+type Signature struct {
+	CertificateRequest CertificateRequest
+	SigningAlgorithm   x509.SignatureAlgorithm
+	Data
+}
+
 type TrustChain struct {
 	CommonName                    string
 	CertificateAuthorityDirectory []string
@@ -37,6 +43,35 @@ type Manifest struct {
 	Signature        *[]byte
 	Hash             *[]byte
 	Data             Data
+}
+
+type CertificateRequest struct {
+	CommonName            string
+	SubjectAlternateNames []string
+	DistinguishedName     DistinguishedName
+	SigningAlgorithm      x509.SignatureAlgorithm
+	PublicKeyAlgorithm    x509.PublicKeyAlgorithm
+	KeySize               int
+	Output                Output
+}
+
+type DistinguishedName struct {
+	Country            []string
+	Province           []string
+	Locality           []string
+	Organization       []string
+	OrganizationalUnit []string
+	StreetAddress      []string
+	PostalCode         []string
+	SerialNumber       string
+}
+
+type Output struct {
+	CertificateSigningRequest    string
+	Certificate                  string
+	IntermediateCertificateChain string
+	RootCertificateChain         string
+	PrivateKey                   string
 }
 
 var SignatureAlgorithm = map[x509.SignatureAlgorithm]func() (hash.Hash, crypto.Hash){

@@ -8,7 +8,7 @@ import (
 	"github.com/coinbase/baseca/pkg/util"
 )
 
-func (c *Client) ProvisionIssueCertificate(certificateRequest CertificateRequest, ca *apiv1.CertificateAuthorityParameter, service, environment, extendedKey string) (*apiv1.SignedCertificate, error) {
+func (c *Client) ProvisionIssueCertificate(certificateRequest types.CertificateRequest, ca *apiv1.CertificateAuthorityParameter, service, environment, extendedKey string) (*apiv1.SignedCertificate, error) {
 	signingRequest, err := GenerateCSR(certificateRequest)
 	if err != nil {
 		return nil, err

@@ -3,49 +3,47 @@ package examples
 import (
 	"crypto/x509"
 	"log"
-	"os"
 
 	baseca "github.com/coinbase/baseca/pkg/client"
 	"github.com/coinbase/baseca/pkg/types"
 )
 
 func CodeSign() {
-	configuration := baseca.Configuration{
-		URL:         "localhost:9090",
-		Environment: baseca.Env.Local,
-	}
-
-	authentication := baseca.Authentication{
-		ClientId:    "CLIENT_ID",
-		ClientToken: "CLIENT_TOKEN",
-	}
-
-	client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
+	client, err := baseca.NewClient("localhost:9090", baseca.Attestation.Local,
+		baseca.WithClientId("CLIENT_ID"), baseca.WithClientToken("CLIENT_TOKEN"),
+		baseca.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	metadata := baseca.CertificateRequest{
-		CommonName:            "example.coinbase.com",
-		SubjectAlternateNames: []string{"example.coinbase.com"},
-		SigningAlgorithm:      x509.ECDSAWithSHA384,
-		PublicKeyAlgorithm:    x509.ECDSA,
-		KeySize:               256,
-		DistinguishedName: baseca.DistinguishedName{
-			Organization: []string{"Coinbase"},
-			// Additional Fields
+	metadata := types.Signature{
+		CertificateRequest: types.CertificateRequest{
+			CommonName:            "example.coinbase.com",
+			SubjectAlternateNames: []string{"example.coinbase.com"},
+			SigningAlgorithm:      x509.ECDSAWithSHA512,
+			PublicKeyAlgorithm:    x509.ECDSA,
+			KeySize:               256,
+			Output: types.Output{
+				PrivateKey:                   "/tmp/private.key",
+				Certificate:                  "/tmp/certificate.crt",
+				IntermediateCertificateChain: "/tmp/intermediate_chain.crt",
+				RootCertificateChain:         "/tmp/root_chain.crt",
+				CertificateSigningRequest:    "/tmp/certificate_request.csr",
+			},
+			DistinguishedName: types.DistinguishedName{
+				Organization: []string{"Coinbase"},
+			},
 		},
-		Output: baseca.Output{
-			PrivateKey:                   "/tmp/private.key",
-			Certificate:                  "/tmp/certificate.crt",
-			IntermediateCertificateChain: "/tmp/intermediate_chain.crt",
-			RootCertificateChain:         "/tmp/root_chain.crt",
-			CertificateSigningRequest:    "/tmp/certificate_request.csr",
+		SigningAlgorithm: x509.ECDSAWithSHA512,
+		Data: types.Data{
+			Path: types.Path{
+				File:   "/path/to/artifact",
+				Buffer: 4096,
+			},
 		},
 	}
 
-	data, _ := os.ReadFile("/bin/chmod")
-	signature, chain, err := client.GenerateSignature(metadata, &data)
+	signature, chain, err := client.GenerateSignature(metadata)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,15 +55,15 @@ func CodeSign() {
 		SigningAlgorithm: x509.ECDSAWithSHA512,
 		Data: types.Data{
 			Path: types.Path{
-				File:   "/bin/chmod",
+				File:   "/path/to/artifact",
 				Buffer: 4096,
 			},
 		},
 	}
 
 	tc := types.TrustChain{
-		CommonName:                "sandbox.coinbase.com",
-		CertificateAuthorityFiles: []string{"/path/to/intermediate_ca.crt"},
+		CommonName:                "example.coinbase.com",
+		CertificateAuthorityFiles: []string{"/path/to/intermetidate.crt"},
 	}
 
 	err = baseca.ValidateSignature(tc, manifest)

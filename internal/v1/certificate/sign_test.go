@@ -9,6 +9,7 @@ import (
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 	"github.com/coinbase/baseca/internal/types"
 	baseca "github.com/coinbase/baseca/pkg/client"
+	lib "github.com/coinbase/baseca/pkg/types"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
@@ -24,7 +25,7 @@ func TestSignCSR(t *testing.T) {
 		{
 			name: "OK",
 			req: func() *apiv1.CertificateSigningRequest {
-				req := baseca.CertificateRequest{
+				req := lib.CertificateRequest{
 					CommonName:            "example.com",
 					SubjectAlternateNames: []string{"example.com"},
 					SigningAlgorithm:      x509.SHA512WithRSA,

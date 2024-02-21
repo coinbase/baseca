@@ -6,20 +6,13 @@ import (
 
 	apiv1 "github.com/coinbase/baseca/gen/go/baseca/v1"
 	baseca "github.com/coinbase/baseca/pkg/client"
+	"github.com/coinbase/baseca/pkg/types"
 )
 
 func OperationsSignCSR() {
-	configuration := baseca.Configuration{
-		URL:         "localhost:9090",
-		Environment: baseca.Env.Local,
-	}
-
-	authentication := baseca.Authentication{
-		ClientId:    "CLIENT_ID",
-		ClientToken: "CLIENT_TOKEN",
-	}
-
-	client, err := baseca.LoadDefaultConfiguration(configuration, baseca.Attestation.Local, authentication)
+	client, err := baseca.NewClient("localhost:9090", baseca.Attestation.Local,
+		baseca.WithClientId("CLIENT_ID"), baseca.WithClientToken("CLIENT_TOKEN"),
+		baseca.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -32,17 +25,17 @@ func OperationsSignCSR() {
 		Validity:      30,
 	}
 
-	certificateRequest := baseca.CertificateRequest{
+	certificateRequest := types.CertificateRequest{
 		CommonName:            "example.coinbase.com",
 		SubjectAlternateNames: []string{"example.coinbase.com"},
 		SigningAlgorithm:      x509.SHA384WithRSA,
 		PublicKeyAlgorithm:    x509.RSA,
 		KeySize:               4096,
-		DistinguishedName: baseca.DistinguishedName{
+		DistinguishedName: types.DistinguishedName{
 			Organization: []string{"Coinbase"},
 			// Additional Fields
 		},
-		Output: baseca.Output{
+		Output: types.Output{
 			PrivateKey:                   "/tmp/sandbox.key",
 			CertificateSigningRequest:    "/tmp/sandbox.csr",
 			Certificate:                  "/tmp/sandbox.crt",

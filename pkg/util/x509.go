@@ -48,8 +48,9 @@ func GenerateCertificatePool(tc types.TrustChain) (*x509.CertPool, error) {
 			return nil, errors.New("invalid certificate authority directory")
 		}
 
-		for _, certFile := range files { // #nosec G304 User Only Has Predefined Environment Parameters
-			data, err := os.ReadFile(filepath.Join(dir, certFile.Name()))
+		for _, certFile := range files {
+			certificateFile := filepath.Join(dir, certFile.Name())
+			data, err := os.ReadFile(filepath.Clean(certificateFile))
 			if err != nil {
 				return nil, errors.New("invalid certificate file")
 			}

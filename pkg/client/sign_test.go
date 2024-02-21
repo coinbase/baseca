@@ -5,6 +5,7 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"encoding/pem"
 	"log"
@@ -74,7 +75,9 @@ func TestSign(t *testing.T) {
 				if err != nil {
 					return nil, err
 				}
-				return signer.Sign([]byte("_value"))
+				hasher := sha256.New()
+				hasher.Write([]byte("_value"))
+				return signer.Sign(hasher.Sum(nil))
 			},
 			check: func(t *testing.T, err error) {
 				require.NoError(t, err)
@@ -87,7 +90,9 @@ func TestSign(t *testing.T) {
 				if err != nil {
 					return nil, err
 				}
-				return signer.Sign([]byte("_value"))
+				hasher := sha256.New()
+				hasher.Write([]byte("_value"))
+				return signer.Sign(hasher.Sum(nil))
 			},
 			check: func(t *testing.T, err error) {
 				require.NoError(t, err)

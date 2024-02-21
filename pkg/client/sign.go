@@ -8,6 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -22,11 +23,12 @@ type Signer interface {
 	Sign(data []byte) ([]byte, error)
 }
 
-func (c *Client) GenerateSignature(csr CertificateRequest, data *[]byte) (*[]byte, []*x509.Certificate, error) {
+func (c *Client) GenerateSignature(s types.Signature) (*[]byte, []*x509.Certificate, error) {
 	var certificatePem []*pem.Block
 	var certificateChain []*x509.Certificate
+	var artifactHash []byte
 
-	signingRequest, err := GenerateCSR(csr)
+	signingRequest, err := GenerateCSR(s.CertificateRequest)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -41,25 +43,46 @@ func (c *Client) GenerateSignature(csr CertificateRequest, data *[]byte) (*[]byt
 	}
 
 	err = ParseCertificateFormat(signedCertificate, types.SignedCertificate{
-		CertificatePath:                  csr.Output.Certificate,
-		IntermediateCertificateChainPath: csr.Output.IntermediateCertificateChain,
-		RootCertificateChainPath:         csr.Output.RootCertificateChain,
+		CertificatePath:                  s.CertificateRequest.Output.Certificate,
+		IntermediateCertificateChainPath: s.CertificateRequest.Output.IntermediateCertificateChain,
+		RootCertificateChainPath:         s.CertificateRequest.Output.RootCertificateChain,
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	signer, err := parsePrivateKey(signingRequest.EncodedPKCS8, csr.SigningAlgorithm)
+	signer, err := parsePrivateKey(signingRequest.EncodedPKCS8, s.SigningAlgorithm)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	signature, err := signer.Sign(*data)
+	// Sign Artifact
+	switch {
+	case s.Data.Path != types.Path{}:
+		artifactHash, err = streamSignature(s)
+		if err != nil {
+			return nil, nil, fmt.Errorf("[data.path] %s", err)
+		}
+	case s.Data.Reader != types.Reader{}:
+		artifactHash, err = readerSignature(s)
+		if err != nil {
+			return nil, nil, fmt.Errorf("[data.reader] %s", err)
+		}
+	case s.Data.Raw != nil:
+		artifactHash, err = signer.Sign(*s.Data.Raw)
+		if err != nil {
+			return nil, nil, fmt.Errorf("[data.raw] %s", err)
+		}
+	default:
+		return nil, nil, errors.New("data not present within manifest")
+	}
+
+	signature, err := signer.Sign(artifactHash)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error signing data: %w", err)
 	}
 
-	fullChain, err := os.ReadFile(filepath.Clean(csr.Output.RootCertificateChain))
+	fullChain, err := os.ReadFile(filepath.Clean(s.CertificateRequest.Output.RootCertificateChain))
 	if err != nil {
 		return nil, nil, fmt.Errorf("error retrieving full chain certificate: %s", err)
 	}
@@ -117,4 +140,63 @@ func parsePrivateKey(pk []byte, signatureAlgorithm x509.SignatureAlgorithm) (Sig
 	default:
 		return nil, errors.New("unsupported private key type")
 	}
+}
+
+// Stream Large Files and Sign the Hash by Passing in Filepath
+func streamSignature(s types.Signature) ([]byte, error) {
+	algorithm, exists := types.SignatureAlgorithm[s.SigningAlgorithm]
+	if !exists {
+		return nil, fmt.Errorf("invalid signing algorithm: %s", s.SigningAlgorithm)
+	}
+	hashedAlgorithm, _ := algorithm()
+
+	file, err := os.Open(s.Data.Path.File)
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %s", err)
+	}
+	defer file.Close()
+
+	if s.Data.Reader.Buffer > 0 {
+		_buffer = s.Data.Reader.Buffer
+	}
+
+	buffer := make([]byte, _buffer)
+	for {
+		n, err := file.Read(buffer)
+		if err != nil && err != io.EOF {
+			return nil, fmt.Errorf("error reading file: %s", err)
+		}
+		if n == 0 {
+			break
+		}
+		hashedAlgorithm.Write(buffer[:n])
+	}
+
+	return hashedAlgorithm.Sum(nil), nil
+}
+
+func readerSignature(s types.Signature) ([]byte, error) {
+	algorithm, exist := types.SignatureAlgorithm[s.SigningAlgorithm]
+	if !exist {
+		return nil, fmt.Errorf("invalid signing algorithm: %s", s.SigningAlgorithm)
+	}
+	hashedAlgorithm, _ := algorithm()
+
+	if s.Data.Reader.Buffer > 0 {
+		_buffer = s.Data.Reader.Buffer
+	}
+
+	buffer := make([]byte, _buffer)
+	for {
+		n, err := s.Data.Reader.Interface.Read(buffer)
+		if err != nil && err != io.EOF {
+			return nil, fmt.Errorf("error reading file: %s", err)
+		}
+		if n == 0 {
+			break
+		}
+		hashedAlgorithm.Write(buffer[:n])
+	}
+
+	return hashedAlgorithm.Sum(nil), nil
 }

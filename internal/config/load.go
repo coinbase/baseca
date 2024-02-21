@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -81,7 +82,7 @@ func (cp *configProvider) Exists(path string) bool {
 func GetTestConfigurationPath() (*Config, error) {
 	_, filename, _, ok := runtime.Caller(0)
 	if !ok {
-		fmt.Println("Error: Unable to get current file path")
+		log.Fatal("Error: Unable to get current file path")
 	}
 
 	baseDir := filepath.Dir(filename)
@@ -92,7 +93,7 @@ func GetTestConfigurationPath() (*Config, error) {
 
 		parentDir := filepath.Dir(baseDir)
 		if parentDir == baseDir {
-			fmt.Println("Error: Unable to find base directory")
+			log.Fatal("Error: Unable to find base directory")
 			break
 		}
 

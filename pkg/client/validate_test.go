@@ -3,6 +3,7 @@ package baseca
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -28,7 +29,10 @@ func TestValidateSignature(t *testing.T) {
 				pk, certificate, path := generateSelfSignedCertificateAuthority()
 				signer, _ := parsePrivateKey(pk, x509.SHA256WithRSA)
 
-				signature, err := signer.Sign(data)
+				hasher := sha256.New()
+				hasher.Write([]byte(data))
+
+				signature, err := signer.Sign(hasher.Sum(nil))
 				if err != nil {
 					return fmt.Errorf("error signing data: %s", err)
 				}
